@@ -156,6 +156,7 @@
     <ClCompile Include="service\AppContextTest.cpp" />
     <ClCompile Include="service\SummaryTest.cpp" />
     <ClCompile Include="service\ConsoleUITest.cpp" />
+    <ClCompile Include="service\DateTimeFormatTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">

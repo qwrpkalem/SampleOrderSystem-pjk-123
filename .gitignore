@@ -10,3 +10,4 @@ x86/
 *.log
 *.user
 vcpkg_installed/
+sample_order_system_data.json

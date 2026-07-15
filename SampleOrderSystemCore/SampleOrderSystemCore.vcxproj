@@ -130,6 +130,7 @@
     <ClInclude Include="include\service\AppContext.h" />
     <ClInclude Include="include\service\Summary.h" />
     <ClInclude Include="include\service\ConsoleUI.h" />
+    <ClInclude Include="include\service\DateTimeFormat.h" />
     <ClInclude Include="include\service\SampleCatalog.h" />
     <ClInclude Include="include\service\OrderBook.h" />
     <ClInclude Include="include\service\ProductionCalculator.h" />
@@ -152,6 +153,7 @@
     <ClCompile Include="src\service\AppContext.cpp" />
     <ClCompile Include="src\service\Summary.cpp" />
     <ClCompile Include="src\service\ConsoleUI.cpp" />
+    <ClCompile Include="src\service\DateTimeFormat.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

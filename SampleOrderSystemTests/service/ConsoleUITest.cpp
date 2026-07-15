@@ -4,6 +4,7 @@
 
 #include "service/AppContext.h"
 #include "service/ConsoleUI.h"
+#include "service/DateTimeFormat.h"
 
 namespace {
 
@@ -27,6 +28,48 @@ TEST(ConsoleUITest, EnteringZeroAtMainMenuExitsImmediately) {
 
     EXPECT_NE(output.str().find("시료 관리"), std::string::npos);
     EXPECT_NE(output.str().find("종료"), std::string::npos);
+}
+
+TEST(ConsoleUITest, StartupShowsSSemiBannerOnceBeforeMainMenu) {
+    auto path = uniqueTempFilePath("banner");
+    sos::AppContext appContext(path);
+
+    std::istringstream input("0\n");
+    std::ostringstream output;
+
+    sos::ConsoleUI ui(appContext);
+    ui.run(input, output);
+
+    std::string text = output.str();
+    auto bannerPos = text.find("S-SEMI");
+    auto mainMenuPos = text.find("시료 관리");
+    ASSERT_NE(bannerPos, std::string::npos);
+    ASSERT_NE(mainMenuPos, std::string::npos);
+    EXPECT_LT(bannerPos, mainMenuPos);
+
+    // Banner should appear exactly once even though the main menu can loop.
+    EXPECT_EQ(text.find("S-SEMI", bannerPos + 1), std::string::npos);
+}
+
+TEST(ConsoleUITest, MainMenuShowsCurrentDateTimeAndCountsUnderSystemStatus) {
+    auto path = uniqueTempFilePath("system_status");
+    sos::AppContext appContext(path);
+    appContext.sampleCatalog().registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+
+    auto fixedNow = std::chrono::system_clock::now();
+    std::istringstream input("0\n");
+    std::ostringstream output;
+
+    sos::ConsoleUI ui(appContext, [fixedNow]() { return fixedNow; });
+    ui.run(input, output);
+
+    std::string text = output.str();
+    EXPECT_NE(text.find("시스템 현황"), std::string::npos);
+    EXPECT_NE(text.find(sos::formatDateTime(fixedNow)), std::string::npos);
+    EXPECT_NE(text.find("총 등록 시료"), std::string::npos);
+    EXPECT_NE(text.find("총 재고"), std::string::npos);
+    EXPECT_NE(text.find("전체 주문 건수"), std::string::npos);
+    EXPECT_NE(text.find("생산라인 대기"), std::string::npos);
 }
 
 TEST(ConsoleUITest, FullLifecycleFlowThroughMenusRegistersOrdersApprovesAndReleases) {

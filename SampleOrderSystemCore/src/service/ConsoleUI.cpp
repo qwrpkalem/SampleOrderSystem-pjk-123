@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "service/DateTimeFormat.h"
 #include "service/Monitoring.h"
 #include "service/Summary.h"
 
@@ -40,15 +41,23 @@ const char* orderStatusLabel(OrderStatus status) {
 
 }  // namespace
 
-ConsoleUI::ConsoleUI(AppContext& appContext) : appContext_(appContext) {}
+ConsoleUI::ConsoleUI(AppContext& appContext, NowProvider nowProvider)
+    : appContext_(appContext), nowProvider_(std::move(nowProvider)) {}
+
+void ConsoleUI::printBanner(std::ostream& out) {
+    out << "============================================\n";
+    out << "                  S-SEMI\n";
+    out << "        반도체 시료 생산주문관리 시스템\n";
+    out << "============================================\n";
+}
 
 void ConsoleUI::printMainMenu(std::ostream& out) {
     Summary summary = buildSummary(appContext_.sampleCatalog(), appContext_.orderBook(), appContext_.productionQueue());
 
     out << "========================================\n";
-    out << "반도체 시료 생산주문관리 시스템\n";
-    out << "등록 시료 종류: " << summary.sampleTypeCount << "  총 재고: " << summary.totalStock
-        << "  전체 주문건수: " << summary.totalOrderCount
+    out << "시스템 현황  " << formatDateTime(nowProvider_()) << "\n";
+    out << "총 등록 시료: " << summary.sampleTypeCount << "  총 재고: " << summary.totalStock
+        << "  전체 주문 건수: " << summary.totalOrderCount
         << "  생산라인 대기: " << summary.pendingProductionJobCount << "\n";
     out << "========================================\n";
     out << "1. 시료 관리\n";
@@ -61,6 +70,8 @@ void ConsoleUI::printMainMenu(std::ostream& out) {
 }
 
 void ConsoleUI::run(std::istream& in, std::ostream& out) {
+    printBanner(out);
+
     while (true) {
         printMainMenu(out);
 
