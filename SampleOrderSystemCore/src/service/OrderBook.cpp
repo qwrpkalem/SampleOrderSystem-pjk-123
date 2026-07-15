@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "service/ProductionCalculator.h"
+
 namespace sos {
 
 namespace {
@@ -17,7 +19,8 @@ std::vector<Order>::iterator findOrder(std::vector<Order>& orders, const std::st
 
 }  // namespace
 
-OrderBook::OrderBook(SampleCatalog& sampleCatalog) : sampleCatalog_(sampleCatalog) {}
+OrderBook::OrderBook(SampleCatalog& sampleCatalog, ProductionQueue& productionQueue, NowProvider nowProvider)
+    : sampleCatalog_(sampleCatalog), productionQueue_(productionQueue), nowProvider_(std::move(nowProvider)) {}
 
 Order OrderBook::placeOrder(std::string id, std::string sampleId, std::string customerName, int quantity) {
     if (!sampleCatalog_.exists(sampleId)) {
@@ -49,6 +52,13 @@ void OrderBook::approve(const std::string& orderId) {
         sampleCatalog_.decreaseStock(it->sampleId(), it->quantity());
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
     } else {
+        int shortage = it->quantity() - sampleIt->stock();
+        int productionQuantity = calculateProductionQuantity(shortage, sampleIt->yield());
+        double durationMinutes = calculateProductionDuration(sampleIt->averageProductionTime(), productionQuantity);
+        auto completionTime = nowProvider_() + std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                                                    std::chrono::duration<double, std::ratio<60>>(durationMinutes));
+
+        productionQueue_.enqueue(ProductionJob{it->id(), it->sampleId(), productionQuantity, completionTime});
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);
     }
 }
