@@ -14,6 +14,12 @@
     재시작 시점에 판단할 수 있다 (참고: [production-line.md](./production-line.md)의
     "생산 도중 프로그램 종료" 결정 사항).
 
+## 구현 순서
+
+- Phase 1(기반 구조)에서는 시료 목록과 주문 목록(상태 포함)만 저장/불러오기를 구현한다.
+  생산 큐/진행 중인 생산 정보(생산 완료 예정 시각 포함) 저장은 해당 도메인 모델이 정의되는
+  Phase 5(생산 라인)에서 함께 구현한다 (참고: `docs_temp/phase5-production-line.md`).
+
 ## 관련 문서
 
 - 생산 완료 판정 및 재고 반영 타이밍: [production-line.md](./production-line.md)
