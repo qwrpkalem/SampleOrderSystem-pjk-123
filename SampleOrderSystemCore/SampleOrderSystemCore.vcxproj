@@ -124,6 +124,7 @@
     <ClInclude Include="include\service\SampleCatalog.h" />
     <ClInclude Include="include\service\OrderBook.h" />
     <ClInclude Include="include\service\ProductionCalculator.h" />
+    <ClInclude Include="include\service\ProductionQueue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\domain\Sample.cpp" />
@@ -134,6 +135,7 @@
     <ClCompile Include="src\service\SampleCatalog.cpp" />
     <ClCompile Include="src\service\OrderBook.cpp" />
     <ClCompile Include="src\service\ProductionCalculator.cpp" />
+    <ClCompile Include="src\service\ProductionQueue.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
