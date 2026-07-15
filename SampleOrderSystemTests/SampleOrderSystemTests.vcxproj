@@ -144,6 +144,7 @@
     <ClCompile Include="domain\RepositoryTest.cpp" />
     <ClCompile Include="service\SampleCatalogTest.cpp" />
     <ClCompile Include="service\OrderBookTest.cpp" />
+    <ClCompile Include="service\ProductionCalculatorTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">

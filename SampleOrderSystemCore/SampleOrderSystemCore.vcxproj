@@ -123,6 +123,7 @@
     <ClInclude Include="include\persistence\Repository.h" />
     <ClInclude Include="include\service\SampleCatalog.h" />
     <ClInclude Include="include\service\OrderBook.h" />
+    <ClInclude Include="include\service\ProductionCalculator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\domain\Sample.cpp" />
@@ -132,6 +133,7 @@
     <ClCompile Include="src\persistence\Repository.cpp" />
     <ClCompile Include="src\service\SampleCatalog.cpp" />
     <ClCompile Include="src\service\OrderBook.cpp" />
+    <ClCompile Include="src\service\ProductionCalculator.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
