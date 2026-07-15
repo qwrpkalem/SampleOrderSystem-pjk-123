@@ -3,5 +3,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="SampleOrderSystem/SampleOrderSystem.vcxproj" />
+  <Project Path="SampleOrderSystem/SampleOrderSystem.vcxproj" Id="e367bb25-e6ef-4d2c-b99f-0bb5f03322dd" />
+  <Project Path="SampleOrderSystemCore/SampleOrderSystemCore.vcxproj" Id="1a2b3c4d-1111-4d2c-b99f-0bb5f0332201" />
+  <Project Path="SampleOrderSystemTests/SampleOrderSystemTests.vcxproj" Id="2b3c4d5e-2222-4d2c-b99f-0bb5f0332202" />
 </Solution>
