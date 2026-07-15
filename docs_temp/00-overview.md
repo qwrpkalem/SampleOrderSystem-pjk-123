@@ -4,6 +4,16 @@
 각 Phase는 [MyTDD skill](../.claude/skills/MyTDD/SKILL.md)의 Red-Green-Review-Refactor 사이클을
 따라 진행한다.
 
+## 진행 단위와 커밋 규칙
+
+- 하나의 Phase는 여러 **구성요소(클래스/기능)** 단위로 나뉜다 (예: Phase 1은 `Sample` 모델,
+  `Order` 모델, JSON 직렬화, Repository 등).
+- Red-Green은 테스트 하나 단위로 진행하되, **Review는 구성요소 단위로 모아서** 진행한다
+  (자세한 내용은 `MyTDD` skill 문서 참고).
+- 하나의 구성요소에 대한 Review·Refactor가 끝나면, 관련 문서(`docs/PRD.md`,
+  `docs/features/*.md`, 이 Phase 문서)를 필요 시 함께 Update하고 **커밋 및 푸시한 뒤** 다음
+  구성요소로 넘어간다.
+
 ## Phase 목록
 
 | Phase | 이름 | 문서 | 선행 Phase |
