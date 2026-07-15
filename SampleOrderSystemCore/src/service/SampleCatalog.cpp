@@ -30,19 +30,29 @@ std::vector<Sample> SampleCatalog::search(const std::string& nameQuery) const {
     return results;
 }
 
-void SampleCatalog::decreaseStock(const std::string& id, int amount) {
+const Sample& SampleCatalog::get(const std::string& id) const {
     auto it = std::find_if(samples_.begin(), samples_.end(), [&id](const Sample& sample) { return sample.id() == id; });
     if (it == samples_.end()) {
         throw std::invalid_argument("Unknown sample id: " + id);
     }
+    return *it;
+}
+
+std::vector<Sample>::iterator SampleCatalog::find(const std::string& id) {
+    auto it = std::find_if(samples_.begin(), samples_.end(), [&id](const Sample& sample) { return sample.id() == id; });
+    if (it == samples_.end()) {
+        throw std::invalid_argument("Unknown sample id: " + id);
+    }
+    return it;
+}
+
+void SampleCatalog::decreaseStock(const std::string& id, int amount) {
+    auto it = find(id);
     *it = Sample(it->id(), it->name(), it->averageProductionTime(), it->yield(), it->stock() - amount);
 }
 
 void SampleCatalog::increaseStock(const std::string& id, int amount) {
-    auto it = std::find_if(samples_.begin(), samples_.end(), [&id](const Sample& sample) { return sample.id() == id; });
-    if (it == samples_.end()) {
-        throw std::invalid_argument("Unknown sample id: " + id);
-    }
+    auto it = find(id);
     *it = Sample(it->id(), it->name(), it->averageProductionTime(), it->yield(), it->stock() + amount);
 }
 

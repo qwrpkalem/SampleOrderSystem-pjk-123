@@ -19,6 +19,14 @@ std::vector<Order>::iterator findOrder(std::vector<Order>& orders, const std::st
     return it;
 }
 
+std::vector<Order>::const_iterator findOrder(const std::vector<Order>& orders, const std::string& orderId) {
+    auto it = std::find_if(orders.begin(), orders.end(), [&orderId](const Order& order) { return order.id() == orderId; });
+    if (it == orders.end()) {
+        throw std::invalid_argument("Unknown order id: " + orderId);
+    }
+    return it;
+}
+
 const std::string kOrderIdPrefix = "O-";
 
 // Stock is only ever decreased at release time. Until then, any order that has already been
@@ -39,6 +47,31 @@ int committedQuantityForSample(const std::vector<Order>& orders, const std::stri
         }
     }
     return committed;
+}
+
+struct StockAssessment {
+    int committedQuantity;
+    int availableStock;      // max(0, sample stock - committedQuantity)
+    bool sufficient;
+    int shortage;             // 0 when sufficient
+    int productionQuantity;   // 0 when sufficient; otherwise ceil(shortage / yield)
+};
+
+// Shared by previewApproval() and approve() so the two can never diverge on how
+// sufficiency/shortage/production quantity is computed.
+StockAssessment assessStock(const std::vector<Order>& orders, const Order& order, const Sample& sample) {
+    StockAssessment assessment;
+    assessment.committedQuantity = committedQuantityForSample(orders, order.sampleId(), order.id());
+    assessment.availableStock = std::max(0, sample.stock() - assessment.committedQuantity);
+    assessment.sufficient = assessment.availableStock >= order.quantity();
+    if (assessment.sufficient) {
+        assessment.shortage = 0;
+        assessment.productionQuantity = 0;
+    } else {
+        assessment.shortage = order.quantity() - assessment.availableStock;
+        assessment.productionQuantity = calculateProductionQuantity(assessment.shortage, sample.yield());
+    }
+    return assessment;
 }
 
 }  // namespace
@@ -73,62 +106,35 @@ void OrderBook::reject(const std::string& orderId) {
 }
 
 ApprovalPreview OrderBook::previewApproval(const std::string& orderId) const {
-    auto orderIt = std::find_if(orders_.begin(), orders_.end(),
-                                 [&orderId](const Order& order) { return order.id() == orderId; });
-    if (orderIt == orders_.end()) {
-        throw std::invalid_argument("Unknown order id: " + orderId);
-    }
-
-    auto samples = sampleCatalog_.list();
-    auto sampleIt = std::find_if(samples.begin(), samples.end(),
-                                  [&orderIt](const Sample& sample) { return sample.id() == orderIt->sampleId(); });
-    if (sampleIt == samples.end()) {
-        throw std::invalid_argument("Unknown sample id: " + orderIt->sampleId());
-    }
-
-    int committed = committedQuantityForSample(orders_, orderIt->sampleId(), orderIt->id());
-    // A prior order can already claim more than the raw stock (its own shortage is covered by
-    // production, not by stock that doesn't exist), so the stock left over for this order can
-    // never go below zero.
-    int available = std::max(0, sampleIt->stock() - committed);
+    auto orderIt = findOrder(orders_, orderId);
+    const Sample& sample = sampleCatalog_.get(orderIt->sampleId());
+    StockAssessment assessment = assessStock(orders_, *orderIt, sample);
 
     ApprovalPreview preview;
-    preview.currentStock = sampleIt->stock();
-    preview.committedQuantity = committed;
-    preview.availableStock = available;
+    preview.currentStock = sample.stock();
+    preview.committedQuantity = assessment.committedQuantity;
+    preview.availableStock = assessment.availableStock;
     preview.orderQuantity = orderIt->quantity();
-    preview.sufficient = available >= preview.orderQuantity;
-    if (preview.sufficient) {
-        preview.shortage = 0;
-        preview.productionQuantity = 0;
-    } else {
-        preview.shortage = preview.orderQuantity - available;
-        preview.productionQuantity = calculateProductionQuantity(preview.shortage, sampleIt->yield());
-    }
+    preview.sufficient = assessment.sufficient;
+    preview.shortage = assessment.shortage;
+    preview.productionQuantity = assessment.productionQuantity;
     return preview;
 }
 
 void OrderBook::approve(const std::string& orderId) {
     auto it = findOrder(orders_, orderId);
+    const Sample& sample = sampleCatalog_.get(it->sampleId());
+    // Stock is only ever decreased when an order is released, never at approval time. See
+    // assessStock() for how sufficiency/shortage/production quantity are derived.
+    StockAssessment assessment = assessStock(orders_, *it, sample);
 
-    auto samples = sampleCatalog_.list();
-    auto sampleIt = std::find_if(samples.begin(), samples.end(),
-                                  [it](const Sample& sample) { return sample.id() == it->sampleId(); });
-
-    // Stock is only ever decreased when an order is released, never at approval time. Any
-    // stock already committed to other Producing/Confirmed orders for this sample must be
-    // subtracted first so it isn't double-allocated to this order too.
-    int committed = committedQuantityForSample(orders_, it->sampleId(), it->id());
-    int available = std::max(0, sampleIt->stock() - committed);
-
-    if (available >= it->quantity()) {
+    if (assessment.sufficient) {
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
     } else {
-        int shortage = it->quantity() - available;
-        int productionQuantity = calculateProductionQuantity(shortage, sampleIt->yield());
-        double durationMinutes = calculateProductionDuration(sampleIt->averageProductionTime(), productionQuantity);
-
-        productionQueue_.enqueue(it->id(), it->sampleId(), shortage, productionQuantity, durationMinutes);
+        double durationMinutes =
+            calculateProductionDuration(sample.averageProductionTime(), assessment.productionQuantity);
+        productionQueue_.enqueue(it->id(), it->sampleId(), assessment.shortage, assessment.productionQuantity,
+                                  durationMinutes);
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);
     }
 }
