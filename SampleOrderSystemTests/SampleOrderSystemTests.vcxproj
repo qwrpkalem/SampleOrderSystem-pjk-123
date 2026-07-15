@@ -138,6 +138,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="domain\SampleTest.cpp" />
+    <ClCompile Include="domain\OrderTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">
