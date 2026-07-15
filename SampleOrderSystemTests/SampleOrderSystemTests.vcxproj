@@ -149,6 +149,7 @@
     <ClCompile Include="service\ProductionLineTest.cpp" />
     <ClCompile Include="service\ProductionJobJsonTest.cpp" />
     <ClCompile Include="service\MonitoringTest.cpp" />
+    <ClCompile Include="service\AppContextTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">

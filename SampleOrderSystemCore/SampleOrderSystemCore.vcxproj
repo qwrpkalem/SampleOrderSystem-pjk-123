@@ -123,6 +123,7 @@
     <ClInclude Include="include\persistence\Repository.h" />
     <ClInclude Include="include\service\ProductionJobJson.h" />
     <ClInclude Include="include\service\Monitoring.h" />
+    <ClInclude Include="include\service\AppContext.h" />
     <ClInclude Include="include\service\SampleCatalog.h" />
     <ClInclude Include="include\service\OrderBook.h" />
     <ClInclude Include="include\service\ProductionCalculator.h" />
@@ -142,6 +143,7 @@
     <ClCompile Include="src\service\ProductionLine.cpp" />
     <ClCompile Include="src\service\ProductionJobJson.cpp" />
     <ClCompile Include="src\service\Monitoring.cpp" />
+    <ClCompile Include="src\service\AppContext.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
