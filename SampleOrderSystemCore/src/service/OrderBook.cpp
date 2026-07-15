@@ -21,6 +21,26 @@ std::vector<Order>::iterator findOrder(std::vector<Order>& orders, const std::st
 
 const std::string kOrderIdPrefix = "O-";
 
+// Stock is only ever decreased at release time. Until then, any order that has already been
+// approved (Producing or Confirmed) has an implicit claim on the sample's stock that has not
+// been physically deducted yet. To avoid double-allocating the same physical stock to two
+// different orders, that claim must be subtracted from the raw stock number before deciding
+// whether a *new* approval has enough stock available.
+int committedQuantityForSample(const std::vector<Order>& orders, const std::string& sampleId,
+                                const std::string& excludingOrderId) {
+    int committed = 0;
+    for (const auto& order : orders) {
+        if (order.id() == excludingOrderId) {
+            continue;
+        }
+        if (order.sampleId() == sampleId &&
+            (order.status() == OrderStatus::Producing || order.status() == OrderStatus::Confirmed)) {
+            committed += order.quantity();
+        }
+    }
+    return committed;
+}
+
 }  // namespace
 
 OrderBook::OrderBook(SampleCatalog& sampleCatalog, ProductionQueue& productionQueue)
@@ -66,15 +86,23 @@ ApprovalPreview OrderBook::previewApproval(const std::string& orderId) const {
         throw std::invalid_argument("Unknown sample id: " + orderIt->sampleId());
     }
 
+    int committed = committedQuantityForSample(orders_, orderIt->sampleId(), orderIt->id());
+    // A prior order can already claim more than the raw stock (its own shortage is covered by
+    // production, not by stock that doesn't exist), so the stock left over for this order can
+    // never go below zero.
+    int available = std::max(0, sampleIt->stock() - committed);
+
     ApprovalPreview preview;
     preview.currentStock = sampleIt->stock();
+    preview.committedQuantity = committed;
+    preview.availableStock = available;
     preview.orderQuantity = orderIt->quantity();
-    preview.sufficient = preview.currentStock >= preview.orderQuantity;
+    preview.sufficient = available >= preview.orderQuantity;
     if (preview.sufficient) {
         preview.shortage = 0;
         preview.productionQuantity = 0;
     } else {
-        preview.shortage = preview.orderQuantity - preview.currentStock;
+        preview.shortage = preview.orderQuantity - available;
         preview.productionQuantity = calculateProductionQuantity(preview.shortage, sampleIt->yield());
     }
     return preview;
@@ -87,20 +115,18 @@ void OrderBook::approve(const std::string& orderId) {
     auto sampleIt = std::find_if(samples.begin(), samples.end(),
                                   [it](const Sample& sample) { return sample.id() == it->sampleId(); });
 
-    if (sampleIt->stock() >= it->quantity()) {
-        sampleCatalog_.decreaseStock(it->sampleId(), it->quantity());
+    // Stock is only ever decreased when an order is released, never at approval time. Any
+    // stock already committed to other Producing/Confirmed orders for this sample must be
+    // subtracted first so it isn't double-allocated to this order too.
+    int committed = committedQuantityForSample(orders_, it->sampleId(), it->id());
+    int available = std::max(0, sampleIt->stock() - committed);
+
+    if (available >= it->quantity()) {
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
     } else {
-        int shortage = it->quantity() - sampleIt->stock();
+        int shortage = it->quantity() - available;
         int productionQuantity = calculateProductionQuantity(shortage, sampleIt->yield());
         double durationMinutes = calculateProductionDuration(sampleIt->averageProductionTime(), productionQuantity);
-
-        // The stock currently on hand is fully committed to this order (it will be consumed by
-        // it once production tops up the shortfall), so it must not be counted as available for
-        // any other order on the same sample approved afterwards.
-        if (sampleIt->stock() > 0) {
-            sampleCatalog_.decreaseStock(it->sampleId(), sampleIt->stock());
-        }
 
         productionQueue_.enqueue(it->id(), it->sampleId(), shortage, productionQuantity, durationMinutes);
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);
@@ -132,6 +158,8 @@ void OrderBook::release(const std::string& orderId) {
     if (it->status() != OrderStatus::Confirmed) {
         throw std::invalid_argument("Order is not in Confirmed status: " + orderId);
     }
+    // Stock only ever decreases here, at the moment of actual release.
+    sampleCatalog_.decreaseStock(it->sampleId(), it->quantity());
     *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Release);
 }
 

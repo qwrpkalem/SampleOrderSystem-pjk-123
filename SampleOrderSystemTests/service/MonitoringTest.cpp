@@ -33,14 +33,17 @@ TEST(MonitoringTest, EvaluateStockLevelIsInsufficientWhenStockIsBelowDemand) {
     EXPECT_EQ(sos::evaluateStockLevel(3, 5), sos::StockLevel::Insufficient);
 }
 
-TEST(MonitoringTest, TotalDemandForSampleSumsOnlyReservedOrdersForThatSample) {
+TEST(MonitoringTest, TotalDemandForSampleSumsOrdersNotYetReleasedForThatSample) {
+    // Stock is only decreased at release time, so Reserved, Producing, and Confirmed orders
+    // all still represent an outstanding claim against the sample's current stock.
     std::vector<sos::Order> orders;
     orders.emplace_back("O-001", "S-001", "Acme Labs", 5, sos::OrderStatus::Reserved);
     orders.emplace_back("O-002", "S-001", "Acme Labs", 3, sos::OrderStatus::Reserved);
     orders.emplace_back("O-003", "S-002", "Acme Labs", 100, sos::OrderStatus::Reserved);  // different sample
-    orders.emplace_back("O-004", "S-001", "Acme Labs", 7, sos::OrderStatus::Confirmed);   // already fulfilled
+    orders.emplace_back("O-004", "S-001", "Acme Labs", 7, sos::OrderStatus::Confirmed);
+    orders.emplace_back("O-005", "S-001", "Acme Labs", 4, sos::OrderStatus::Release);  // already released
 
     int demand = sos::totalDemandForSample("S-001", orders);
 
-    EXPECT_EQ(demand, 8);
+    EXPECT_EQ(demand, 15);
 }

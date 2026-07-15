@@ -36,9 +36,15 @@ StockLevel evaluateStockLevel(int stock, int demand) {
 }
 
 int totalDemandForSample(const std::string& sampleId, const std::vector<Order>& orders) {
+    // Stock is only decreased at release time, so any order that has not been released yet
+    // (Reserved, Producing, or Confirmed) still has a claim on the sample's current stock.
     int total = 0;
     for (const auto& order : orders) {
-        if (order.sampleId() == sampleId && order.status() == OrderStatus::Reserved) {
+        if (order.sampleId() != sampleId) {
+            continue;
+        }
+        if (order.status() == OrderStatus::Reserved || order.status() == OrderStatus::Producing ||
+            order.status() == OrderStatus::Confirmed) {
             total += order.quantity();
         }
     }

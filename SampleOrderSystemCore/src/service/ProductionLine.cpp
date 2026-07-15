@@ -17,13 +17,10 @@ void ProductionLine::processCompletedJobs() {
         }
 
         productionQueue_.dequeue();
-        // `shortage` worth of the newly produced goods goes straight to fulfilling this order
-        // (its stock was already fully committed to it at approval time); only the surplus
-        // caused by yield-adjusted rounding becomes real, available stock.
-        int surplus = job.productionQuantity - job.shortage;
-        if (surplus > 0) {
-            sampleCatalog_.increaseStock(job.sampleId, surplus);
-        }
+        // Stock is only ever decreased at release time, so the full produced quantity is added
+        // to stock here; the order's own quantity remains a claim on that stock (tracked via its
+        // Confirmed status) until it is actually released.
+        sampleCatalog_.increaseStock(job.sampleId, job.productionQuantity);
         orderBook_.completeProduction(job.orderId);
     }
 }

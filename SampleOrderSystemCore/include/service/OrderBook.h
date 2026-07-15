@@ -11,6 +11,8 @@ namespace sos {
 
 struct ApprovalPreview {
     int currentStock;
+    int committedQuantity;  // already claimed by other Producing/Confirmed orders on this sample
+    int availableStock;     // max(0, currentStock - committedQuantity)
     int orderQuantity;
     int shortage;            // 0 if stock is sufficient
     int productionQuantity;  // 0 if stock is sufficient; otherwise ceil(shortage / yield)

@@ -249,8 +249,8 @@ TEST(ConsoleUITest, ProductionCompletesWithinTheSameRunningSessionOnceTimePasses
 
     auto samples = appContext.sampleCatalog().list();
     ASSERT_EQ(samples.size(), 1u);
-    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real stock.
-    EXPECT_EQ(samples[0].stock(), 1);
+    // The full production quantity is added to stock on completion (3 original + 3 produced).
+    EXPECT_EQ(samples[0].stock(), 6);
 }
 
 TEST(ConsoleUITest, ApproveWithInsufficientStockShowsProducingOrderInProductionLineMenu) {

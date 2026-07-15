@@ -16,7 +16,7 @@ TEST(ProductionLineTest, ProcessCompletedJobsUpdatesStockAndConfirmsOrder) {
     sos::Order placed = orderBook.placeOrder("S-001", "Acme Labs", 5);
     orderBook.approve(placed.id());
     // shortage = 2, productionQuantity = ceil(2/0.9) = 3, duration = 12.5 * 3 = 37.5 minutes
-    // The 3 units on hand were fully committed to this order at approval time (stock -> 0).
+    // Stock is unaffected by approval; it remains at 3.
 
     currentTime += std::chrono::minutes(38);  // advance past completion time
 
@@ -29,9 +29,8 @@ TEST(ProductionLineTest, ProcessCompletedJobsUpdatesStockAndConfirmsOrder) {
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real
-    // stock; the shortage portion is consumed directly by this order.
-    EXPECT_EQ(samples[0].stock(), 1);
+    // The full production quantity is added to stock on completion (3 original + 3 produced).
+    EXPECT_EQ(samples[0].stock(), 6);
 
     EXPECT_TRUE(productionQueue.empty());
 }
@@ -47,7 +46,7 @@ TEST(ProductionLineTest, ProcessCompletedJobsLeavesUnfinishedJobInQueue) {
     sos::Order placed = orderBook.placeOrder("S-001", "Acme Labs", 5);
     orderBook.approve(placed.id());
     // duration = 37.5 minutes, only 10 minutes have passed -> not yet complete
-    // The 3 units on hand were fully committed to this order at approval time (stock -> 0).
+    // Stock is unaffected by approval; it remains at 3.
 
     currentTime += std::chrono::minutes(10);
 
@@ -60,7 +59,7 @@ TEST(ProductionLineTest, ProcessCompletedJobsLeavesUnfinishedJobInQueue) {
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 0);
+    EXPECT_EQ(samples[0].stock(), 3);
 
     EXPECT_FALSE(productionQueue.empty());
 }
@@ -73,8 +72,6 @@ TEST(ProductionLineTest, RestartRecoveryCompletesJobsThatFinishedWhileProgramWas
     auto pastCompletionTime = restartTime - std::chrono::hours(1);
 
     sos::SampleCatalog catalog;
-    // The 3 units that were on hand before this order's approval were already committed to it
-    // (consumed to 0), matching what a real persisted-before-restart state would look like.
     catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 0));
 
     sos::ProductionQueue productionQueue(clock);
@@ -96,8 +93,8 @@ TEST(ProductionLineTest, RestartRecoveryCompletesJobsThatFinishedWhileProgramWas
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real stock.
-    EXPECT_EQ(samples[0].stock(), 1);
+    // The full production quantity is added to stock on completion (0 original + 3 produced).
+    EXPECT_EQ(samples[0].stock(), 3);
 
     EXPECT_TRUE(productionQueue.empty());
 }

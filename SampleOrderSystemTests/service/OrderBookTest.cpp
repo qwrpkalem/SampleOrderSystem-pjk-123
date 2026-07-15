@@ -60,7 +60,7 @@ TEST(OrderBookTest, RejectTransitionsReservedOrderToRejected) {
     EXPECT_EQ(orders[0].status(), sos::OrderStatus::Rejected);
 }
 
-TEST(OrderBookTest, ApproveWithSufficientStockConfirmsAndDecreasesStock) {
+TEST(OrderBookTest, ApproveWithSufficientStockConfirmsWithoutChangingStock) {
     sos::SampleCatalog catalog;
     catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
     sos::ProductionQueue productionQueue;
@@ -75,7 +75,8 @@ TEST(OrderBookTest, ApproveWithSufficientStockConfirmsAndDecreasesStock) {
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 5);
+    // Stock is only ever decreased at release time, never at approval.
+    EXPECT_EQ(samples[0].stock(), 10);
 
     EXPECT_TRUE(productionQueue.empty());
 }
@@ -95,9 +96,8 @@ TEST(OrderBookTest, ApproveWithInsufficientStockSetsProducingAndEnqueuesProducti
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    // The stock on hand is fully committed to this order at approval time, so it must not
-    // remain available for any other order on the same sample.
-    EXPECT_EQ(samples[0].stock(), 0);
+    // Stock is only ever decreased at release time, never at approval.
+    EXPECT_EQ(samples[0].stock(), 3);
 
     ASSERT_FALSE(productionQueue.empty());
     auto jobs = productionQueue.list();
@@ -168,6 +168,11 @@ TEST(OrderBookTest, ReleaseTransitionsConfirmedOrderToRelease) {
     auto orders = orderBook.list();
     ASSERT_EQ(orders.size(), 1u);
     EXPECT_EQ(orders[0].status(), sos::OrderStatus::Release);
+
+    auto samples = catalog.list();
+    ASSERT_EQ(samples.size(), 1u);
+    // Stock only decreases at release time.
+    EXPECT_EQ(samples[0].stock(), 5);
 }
 
 TEST(OrderBookTest, ReleaseNonConfirmedOrderThrows) {
