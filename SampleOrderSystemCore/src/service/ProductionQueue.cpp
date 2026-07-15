@@ -32,4 +32,8 @@ const ProductionJob& ProductionQueue::front() const {
     return jobs_.front();
 }
 
+void ProductionQueue::restore(std::vector<ProductionJob> jobs) {
+    jobs_ = std::deque<ProductionJob>(jobs.begin(), jobs.end());
+}
+
 }  // namespace sos

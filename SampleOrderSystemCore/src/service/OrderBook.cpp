@@ -66,4 +66,8 @@ void OrderBook::completeProduction(const std::string& orderId) {
     *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
 }
 
+void OrderBook::restoreOrders(std::vector<Order> orders) {
+    orders_ = std::move(orders);
+}
+
 }  // namespace sos

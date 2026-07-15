@@ -26,6 +26,7 @@ public:
     bool empty() const;
     std::vector<ProductionJob> list() const;
     const ProductionJob& front() const;
+    void restore(std::vector<ProductionJob> jobs);
 
 private:
     NowProvider nowProvider_;

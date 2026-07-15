@@ -105,3 +105,20 @@ TEST(OrderBookTest, CompleteProductionTransitionsProducingOrderToConfirmed) {
     ASSERT_EQ(orders.size(), 1u);
     EXPECT_EQ(orders[0].status(), sos::OrderStatus::Confirmed);
 }
+
+TEST(OrderBookTest, RestoreOrdersReplacesListWithGivenOrdersAsIs) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 3));
+    sos::ProductionQueue productionQueue;
+    sos::OrderBook orderBook(catalog, productionQueue);
+
+    std::vector<sos::Order> savedOrders;
+    savedOrders.emplace_back("O-001", "S-001", "Acme Labs", 5, sos::OrderStatus::Producing);
+
+    orderBook.restoreOrders(savedOrders);
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].id(), "O-001");
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Producing);
+}

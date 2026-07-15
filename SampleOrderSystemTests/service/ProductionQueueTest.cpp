@@ -50,3 +50,18 @@ TEST(ProductionQueueTest, SecondJobStartsOnlyAfterFirstJobCompletes) {
     EXPECT_EQ(jobs[0].completionTime, expectedFirstCompletion);
     EXPECT_EQ(jobs[1].completionTime, expectedSecondCompletion);
 }
+
+TEST(ProductionQueueTest, RestoreReplacesQueueWithGivenJobsAsIsWithoutRecomputingTime) {
+    sos::ProductionQueue queue(fixedNow);
+    auto savedCompletionTime = fixedNow() - std::chrono::hours(1);  // in the past, e.g. persisted before restart
+
+    std::vector<sos::ProductionJob> savedJobs;
+    savedJobs.push_back(sos::ProductionJob{"O-001", "S-001", 12, savedCompletionTime});
+
+    queue.restore(savedJobs);
+
+    auto jobs = queue.list();
+    ASSERT_EQ(jobs.size(), 1u);
+    EXPECT_EQ(jobs[0].orderId, "O-001");
+    EXPECT_EQ(jobs[0].completionTime, savedCompletionTime);
+}
