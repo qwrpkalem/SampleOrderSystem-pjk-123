@@ -142,6 +142,7 @@
     <ClCompile Include="domain\SampleJsonTest.cpp" />
     <ClCompile Include="domain\OrderJsonTest.cpp" />
     <ClCompile Include="domain\RepositoryTest.cpp" />
+    <ClCompile Include="service\SampleCatalogTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">
