@@ -1,6 +1,8 @@
 #pragma once
 
+#include <chrono>
 #include <filesystem>
+#include <functional>
 
 #include "persistence/Repository.h"
 #include "service/OrderBook.h"
@@ -12,12 +14,15 @@ namespace sos {
 
 class AppContext {
 public:
-    explicit AppContext(std::filesystem::path filePath);
+    using NowProvider = std::function<std::chrono::system_clock::time_point()>;
+
+    explicit AppContext(std::filesystem::path filePath, NowProvider nowProvider = &std::chrono::system_clock::now);
 
     SampleCatalog& sampleCatalog();
     OrderBook& orderBook();
     ProductionQueue& productionQueue();
 
+    void processCompletedProductionJobs();
     void save();
 
 private:

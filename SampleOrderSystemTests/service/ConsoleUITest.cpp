@@ -161,6 +161,45 @@ TEST(ConsoleUITest, OrderRejectMenuTransitionsOrderToRejected) {
     EXPECT_NE(output.str().find("거절 처리되었습니다."), std::string::npos);
 }
 
+TEST(ConsoleUITest, ProductionCompletesWithinTheSameRunningSessionOnceTimePasses) {
+    // Regression test: previously, completed production jobs were only caught up when the
+    // program restarted. This verifies it also happens while the app keeps running, once the
+    // user returns to the main menu after enough (wall-clock) time has passed.
+    auto path = uniqueTempFilePath("session_time_passes");
+    auto currentTime = std::chrono::system_clock::now();
+    auto clock = [&currentTime]() { return currentTime; };
+    sos::AppContext appContext(path, clock);
+
+    sos::ConsoleUI ui(appContext, clock);
+
+    std::istringstream setupInput(
+        "1\n1\nS-001\nWafer-A\n12.5\n0.9\n3\n0\n"  // register sample with stock 3
+        "2\n1\nO-001\nS-001\nAcme Labs\n5\n"        // place order for 5
+        "2\nO-001\n0\n"                             // approve (insufficient stock -> Producing)
+        "0\n");                                     // exit
+    std::ostringstream setupOutput;
+    ui.run(setupInput, setupOutput);
+
+    auto ordersBefore = appContext.orderBook().list();
+    ASSERT_EQ(ordersBefore.size(), 1u);
+    ASSERT_EQ(ordersBefore[0].status(), sos::OrderStatus::Producing);
+
+    // Time passes while the console app keeps running (no restart, no AppContext recreated).
+    currentTime += std::chrono::minutes(38);  // shortage=2, qty=ceil(2/0.9)=3, duration=12.5*3=37.5min
+
+    std::istringstream resumeInput("0\n");  // just return to main menu and exit
+    std::ostringstream resumeOutput;
+    ui.run(resumeInput, resumeOutput);
+
+    auto ordersAfter = appContext.orderBook().list();
+    ASSERT_EQ(ordersAfter.size(), 1u);
+    EXPECT_EQ(ordersAfter[0].status(), sos::OrderStatus::Confirmed);
+
+    auto samples = appContext.sampleCatalog().list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 6);
+}
+
 TEST(ConsoleUITest, ApproveWithInsufficientStockShowsProducingOrderInProductionLineMenu) {
     auto path = uniqueTempFilePath("approve_insufficient");
     sos::AppContext appContext(path);

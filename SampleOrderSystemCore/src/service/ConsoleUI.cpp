@@ -73,6 +73,7 @@ void ConsoleUI::run(std::istream& in, std::ostream& out) {
     printBanner(out);
 
     while (true) {
+        appContext_.processCompletedProductionJobs();
         printMainMenu(out);
 
         std::string choice;

@@ -60,6 +60,32 @@ TEST(AppContextTest, CatchesUpOverdueProductionJobsOnLoad) {
     EXPECT_EQ(samples[0].stock(), 6);
 }
 
+TEST(AppContextTest, ProcessCompletedProductionJobsAppliesProductionThatFinishedDuringTheSameSession) {
+    auto path = uniqueTempFilePath("process_within_session");
+    auto currentTime = std::chrono::system_clock::now();
+    auto clock = [&currentTime]() { return currentTime; };
+
+    sos::AppContext appContext(path, clock);
+    appContext.sampleCatalog().registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 3));
+    appContext.orderBook().placeOrder("O-001", "S-001", "Acme Labs", 5);
+    appContext.orderBook().approve("O-001");
+    // shortage = 2, productionQuantity = ceil(2/0.9) = 3, duration = 12.5 * 3 = 37.5 minutes
+
+    auto orders = appContext.orderBook().list();
+    ASSERT_EQ(orders[0].status(), sos::OrderStatus::Producing);
+
+    currentTime += std::chrono::minutes(38);  // time passes within the same running session
+    appContext.processCompletedProductionJobs();
+
+    orders = appContext.orderBook().list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Confirmed);
+
+    auto samples = appContext.sampleCatalog().list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 6);
+}
+
 TEST(AppContextTest, SavePersistsCurrentStateBackToRepository) {
     auto path = uniqueTempFilePath("save");
     sos::AppContext appContext(path);

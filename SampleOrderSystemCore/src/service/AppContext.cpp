@@ -2,9 +2,9 @@
 
 namespace sos {
 
-AppContext::AppContext(std::filesystem::path filePath)
-    : repository_(std::move(filePath)), orderBook_(sampleCatalog_, productionQueue_),
-      productionLine_(orderBook_, sampleCatalog_, productionQueue_) {
+AppContext::AppContext(std::filesystem::path filePath, NowProvider nowProvider)
+    : repository_(std::move(filePath)), productionQueue_(nowProvider), orderBook_(sampleCatalog_, productionQueue_),
+      productionLine_(orderBook_, sampleCatalog_, productionQueue_, nowProvider) {
     SystemState state = repository_.load();
     for (const auto& sample : state.samples) {
         sampleCatalog_.registerSample(sample);
@@ -12,6 +12,10 @@ AppContext::AppContext(std::filesystem::path filePath)
     orderBook_.restoreOrders(state.orders);
     productionQueue_.restore(state.productionJobs);
 
+    processCompletedProductionJobs();
+}
+
+void AppContext::processCompletedProductionJobs() {
     productionLine_.processCompletedJobs();
 }
 
