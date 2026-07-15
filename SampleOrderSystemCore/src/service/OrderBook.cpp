@@ -52,6 +52,34 @@ void OrderBook::reject(const std::string& orderId) {
     *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Rejected);
 }
 
+ApprovalPreview OrderBook::previewApproval(const std::string& orderId) const {
+    auto orderIt = std::find_if(orders_.begin(), orders_.end(),
+                                 [&orderId](const Order& order) { return order.id() == orderId; });
+    if (orderIt == orders_.end()) {
+        throw std::invalid_argument("Unknown order id: " + orderId);
+    }
+
+    auto samples = sampleCatalog_.list();
+    auto sampleIt = std::find_if(samples.begin(), samples.end(),
+                                  [&orderIt](const Sample& sample) { return sample.id() == orderIt->sampleId(); });
+    if (sampleIt == samples.end()) {
+        throw std::invalid_argument("Unknown sample id: " + orderIt->sampleId());
+    }
+
+    ApprovalPreview preview;
+    preview.currentStock = sampleIt->stock();
+    preview.orderQuantity = orderIt->quantity();
+    preview.sufficient = preview.currentStock >= preview.orderQuantity;
+    if (preview.sufficient) {
+        preview.shortage = 0;
+        preview.productionQuantity = 0;
+    } else {
+        preview.shortage = preview.orderQuantity - preview.currentStock;
+        preview.productionQuantity = calculateProductionQuantity(preview.shortage, sampleIt->yield());
+    }
+    return preview;
+}
+
 void OrderBook::approve(const std::string& orderId) {
     auto it = findOrder(orders_, orderId);
 
@@ -66,6 +94,13 @@ void OrderBook::approve(const std::string& orderId) {
         int shortage = it->quantity() - sampleIt->stock();
         int productionQuantity = calculateProductionQuantity(shortage, sampleIt->yield());
         double durationMinutes = calculateProductionDuration(sampleIt->averageProductionTime(), productionQuantity);
+
+        // The stock currently on hand is fully committed to this order (it will be consumed by
+        // it once production tops up the shortfall), so it must not be counted as available for
+        // any other order on the same sample approved afterwards.
+        if (sampleIt->stock() > 0) {
+            sampleCatalog_.decreaseStock(it->sampleId(), sampleIt->stock());
+        }
 
         productionQueue_.enqueue(it->id(), it->sampleId(), shortage, productionQuantity, durationMinutes);
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);

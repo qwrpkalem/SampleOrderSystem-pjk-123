@@ -100,13 +100,17 @@ TEST(ConsoleUITest, FullLifecycleFlowThroughMenusRegistersOrdersApprovesAndRelea
         "0\n"        // back to main
         "2\n"        // main -> order menu
         "1\n"        // place order
-        "1\n"        // select sample #1 (S-001) from the shown list
+        "S-001\n"
         "Acme Labs\n"
         "5\n"
-        "2\n"        // list reserved / approve
-        "O-0001\n"   // approve the auto-generated order id
+        "Y\n"        // confirm reservation
         "0\n"        // back to main
-        "4\n"        // main -> release menu
+        "3\n"        // main -> approval menu
+        "1\n"        // approve
+        "O-0001\n"   // the auto-generated order id
+        "Y\n"        // confirm approval
+        "0\n"        // back to main
+        "5\n"        // main -> release menu
         "O-0001\n"   // release
         "0\n"        // back to main
         "0\n");       // exit
@@ -151,7 +155,7 @@ TEST(ConsoleUITest, SampleSearchMenuFindsRegisteredSampleByPartialName) {
     EXPECT_EQ(output.str().find("S-002"), std::string::npos);
 }
 
-TEST(ConsoleUITest, PlaceOrderPromptsSampleSelectionListAndAssignsIdAutomatically) {
+TEST(ConsoleUITest, PlaceOrderShowsSampleListAndConfirmationBeforeAssigningIdAutomatically) {
     auto path = uniqueTempFilePath("order_sample_selection");
     sos::AppContext appContext(path);
     appContext.sampleCatalog().registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
@@ -160,9 +164,10 @@ TEST(ConsoleUITest, PlaceOrderPromptsSampleSelectionListAndAssignsIdAutomaticall
     std::istringstream input(
         "2\n"          // main -> order menu
         "1\n"          // place order
-        "2\n"          // select sample #2 (S-002) from the shown list
+        "S-002\n"
         "Acme Labs\n"
         "3\n"
+        "Y\n"          // confirm reservation
         "0\n"          // back to main
         "0\n");        // exit
     std::ostringstream output;
@@ -171,9 +176,11 @@ TEST(ConsoleUITest, PlaceOrderPromptsSampleSelectionListAndAssignsIdAutomaticall
     ui.run(input, output);
 
     std::string text = output.str();
-    // The sample list should be shown for selection before asking for quantity.
-    EXPECT_NE(text.find("1. S-001"), std::string::npos);
-    EXPECT_NE(text.find("2. S-002"), std::string::npos);
+    // The sample list should be shown for reference before asking for the sample ID.
+    EXPECT_NE(text.find("S-001"), std::string::npos);
+    EXPECT_NE(text.find("S-002"), std::string::npos);
+    // The confirmation summary should be shown before the reservation is placed.
+    EXPECT_NE(text.find("[확인]"), std::string::npos);
 
     auto orders = appContext.orderBook().list();
     ASSERT_EQ(orders.size(), 1u);
@@ -190,8 +197,8 @@ TEST(ConsoleUITest, OrderRejectMenuTransitionsOrderToRejected) {
     sos::Order placed = appContext.orderBook().placeOrder("S-001", "Acme Labs", 5);
 
     std::istringstream input(
-        "2\n"        // main -> order menu
-        "3\n"        // reject
+        "3\n"        // main -> approval menu
+        "2\n"        // reject
         + placed.id() + "\n" +
         "0\n"        // back to main
         "0\n");      // exit
@@ -219,8 +226,8 @@ TEST(ConsoleUITest, ProductionCompletesWithinTheSameRunningSessionOnceTimePasses
 
     std::istringstream setupInput(
         "1\n1\nS-001\nWafer-A\n12.5\n0.9\n3\n0\n"  // register sample with stock 3
-        "2\n1\n1\nAcme Labs\n5\n"                   // place order: select sample #1, qty 5
-        "2\nO-0001\n0\n"                             // approve (insufficient stock -> Producing)
+        "2\n1\nS-001\nAcme Labs\n5\nY\n0\n"          // place order for qty 5, confirm
+        "3\n1\nO-0001\nY\n0\n"                       // approve (insufficient stock -> Producing)
         "0\n");                                     // exit
     std::ostringstream setupOutput;
     ui.run(setupInput, setupOutput);
@@ -242,7 +249,8 @@ TEST(ConsoleUITest, ProductionCompletesWithinTheSameRunningSessionOnceTimePasses
 
     auto samples = appContext.sampleCatalog().list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 6);
+    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real stock.
+    EXPECT_EQ(samples[0].stock(), 1);
 }
 
 TEST(ConsoleUITest, ApproveWithInsufficientStockShowsProducingOrderInProductionLineMenu) {
@@ -252,11 +260,12 @@ TEST(ConsoleUITest, ApproveWithInsufficientStockShowsProducingOrderInProductionL
     sos::Order placed = appContext.orderBook().placeOrder("S-001", "Acme Labs", 5);
 
     std::istringstream input(
-        "2\n"        // main -> order menu
-        "2\n"        // list reserved / approve
+        "3\n"        // main -> approval menu
+        "1\n"        // approve
         + placed.id() + "\n" +  // approve (stock insufficient -> Producing)
+        "Y\n"        // confirm approval
         "0\n"        // back to main
-        "5\n"        // main -> production line menu
+        "6\n"        // main -> production line menu
         "0\n"        // back to main
         "0\n");      // exit
     std::ostringstream output;
@@ -287,7 +296,7 @@ TEST(ConsoleUITest, ProductionLineMenuShowsOrderNumberSampleQuantityShortageProd
     currentTime += std::chrono::minutes(20);  // 30 minutes remaining
 
     sos::ConsoleUI ui(appContext, clock);
-    std::istringstream input("5\n0\n0\n");  // main -> production line menu -> back -> exit
+    std::istringstream input("6\n0\n0\n");  // main -> production line menu -> back -> exit
     std::ostringstream output;
     ui.run(input, output);
 

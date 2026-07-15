@@ -42,7 +42,9 @@ TEST(AppContextTest, CatchesUpOverdueProductionJobsOnLoad) {
     {
         sos::Repository repository(path);
         sos::SystemState state;
-        state.samples.emplace_back("S-001", "Wafer-A", 12.5, 0.9, 3);
+        // Stock is 0 here because it was already fully committed to this order at approval
+        // time, before this state was persisted.
+        state.samples.emplace_back("S-001", "Wafer-A", 12.5, 0.9, 0);
         state.orders.emplace_back("O-001", "S-001", "Acme Labs", 5, sos::OrderStatus::Producing);
         state.productionJobs.push_back(
             sos::ProductionJob{"O-001", "S-001", 2, 3, std::chrono::system_clock::now() - std::chrono::hours(1)});
@@ -57,7 +59,8 @@ TEST(AppContextTest, CatchesUpOverdueProductionJobsOnLoad) {
 
     auto samples = appContext.sampleCatalog().list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 6);
+    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real stock.
+    EXPECT_EQ(samples[0].stock(), 1);
 }
 
 TEST(AppContextTest, ProcessCompletedProductionJobsAppliesProductionThatFinishedDuringTheSameSession) {
@@ -83,7 +86,8 @@ TEST(AppContextTest, ProcessCompletedProductionJobsAppliesProductionThatFinished
 
     auto samples = appContext.sampleCatalog().list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 6);
+    // Only the yield-rounding surplus (productionQuantity 3 - shortage 2 = 1) becomes real stock.
+    EXPECT_EQ(samples[0].stock(), 1);
 }
 
 TEST(AppContextTest, SavePersistsCurrentStateBackToRepository) {

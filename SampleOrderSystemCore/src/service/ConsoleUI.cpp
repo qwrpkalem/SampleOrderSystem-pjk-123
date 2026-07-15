@@ -63,9 +63,10 @@ void ConsoleUI::printMainMenu(std::ostream& out) {
     out << "========================================\n";
     out << "1. 시료 관리\n";
     out << "2. 시료 주문\n";
-    out << "3. 모니터링\n";
-    out << "4. 출고 처리\n";
-    out << "5. 생산 라인\n";
+    out << "3. 주문 승인/거절\n";
+    out << "4. 모니터링\n";
+    out << "5. 출고 처리\n";
+    out << "6. 생산 라인\n";
     out << "0. 종료\n";
     out << "> ";
 }
@@ -89,10 +90,12 @@ void ConsoleUI::run(std::istream& in, std::ostream& out) {
         } else if (choice == "2") {
             handleOrderMenu(in, out);
         } else if (choice == "3") {
-            handleMonitoringMenu(in, out);
+            handleApprovalMenu(in, out);
         } else if (choice == "4") {
-            handleReleaseMenu(in, out);
+            handleMonitoringMenu(in, out);
         } else if (choice == "5") {
+            handleReleaseMenu(in, out);
+        } else if (choice == "6") {
             handleProductionLineMenu(in, out);
         } else {
             out << "알 수 없는 선택입니다.\n";
@@ -136,15 +139,19 @@ void ConsoleUI::handleSampleMenu(std::istream& in, std::ostream& out) {
                 out << "등록 실패: " << e.what() << "\n";
             }
         } else if (choice == "2") {
+            out << "ID | 시료명 | 평균 생산시간 | 수율 | 현재 재고\n";
             for (const auto& sample : appContext_.sampleCatalog().list()) {
-                out << sample.id() << " | " << sample.name() << " | 재고 " << sample.stock() << "\n";
+                out << sample.id() << " | " << sample.name() << " | " << sample.averageProductionTime() << " | "
+                    << sample.yield() << " | " << sample.stock() << "\n";
             }
         } else if (choice == "3") {
             std::string query;
             out << "검색어: ";
             std::getline(in, query);
+            out << "ID | 시료명 | 평균 생산시간 | 수율 | 현재 재고\n";
             for (const auto& sample : appContext_.sampleCatalog().search(query)) {
-                out << sample.id() << " | " << sample.name() << " | 재고 " << sample.stock() << "\n";
+                out << sample.id() << " | " << sample.name() << " | " << sample.averageProductionTime() << " | "
+                    << sample.yield() << " | " << sample.stock() << "\n";
             }
         } else {
             out << "알 수 없는 선택입니다.\n";
@@ -156,8 +163,6 @@ void ConsoleUI::handleOrderMenu(std::istream& in, std::ostream& out) {
     while (true) {
         out << "-- 시료 주문 --\n";
         out << "1. 시료 주문 접수\n";
-        out << "2. 접수된 시료 주문 목록 / 승인\n";
-        out << "3. 시료 주문 거절\n";
         out << "0. 뒤로 가기\n> ";
 
         std::string choice;
@@ -167,57 +172,95 @@ void ConsoleUI::handleOrderMenu(std::istream& in, std::ostream& out) {
 
         if (choice == "1") {
             auto samples = appContext_.sampleCatalog().list();
-            if (samples.empty()) {
-                out << "등록된 시료가 없습니다. 시료를 먼저 등록하세요.\n";
-            } else {
-                for (std::size_t i = 0; i < samples.size(); ++i) {
-                    out << (i + 1) << ". " << samples[i].id() << " | " << samples[i].name() << " | 재고 "
-                        << samples[i].stock() << "\n";
-                }
-                out << "시료 선택 번호: ";
-                std::string selectionStr;
-                std::getline(in, selectionStr);
+            out << "ID | 시료명 | 평균 생산시간 | 수율 | 현재 재고\n";
+            for (const auto& sample : samples) {
+                out << sample.id() << " | " << sample.name() << " | " << sample.averageProductionTime() << " | "
+                    << sample.yield() << " | " << sample.stock() << "\n";
+            }
 
-                try {
-                    int selection = std::stoi(selectionStr);
-                    if (selection < 1 || static_cast<std::size_t>(selection) > samples.size()) {
-                        throw std::invalid_argument("범위를 벗어난 번호입니다: " + selectionStr);
-                    }
-                    const std::string& sampleId = samples[selection - 1].id();
+            std::string sampleId, customerName, quantityStr;
+            out << "시료 ID: ";
+            std::getline(in, sampleId);
+            out << "고객명: ";
+            std::getline(in, customerName);
+            out << "주문 수량: ";
+            std::getline(in, quantityStr);
 
-                    std::string customerName, quantityStr;
-                    out << "고객명: ";
-                    std::getline(in, customerName);
-                    out << "주문 수량: ";
-                    std::getline(in, quantityStr);
+            try {
+                int quantity = std::stoi(quantityStr);
+                out << "[확인] 시료 ID: " << sampleId << " | 고객명: " << customerName
+                    << " | 주문 수량: " << quantity << "\n";
+                out << "위 내용으로 예약 접수하시겠습니까? (Y/N): ";
+                std::string confirm;
+                std::getline(in, confirm);
 
-                    Order placed = appContext_.orderBook().placeOrder(sampleId, customerName, std::stoi(quantityStr));
+                if (confirm == "Y" || confirm == "y") {
+                    Order placed = appContext_.orderBook().placeOrder(sampleId, customerName, quantity);
                     out << "시료 주문이 접수되었습니다. (주문번호: " << placed.id() << ")\n";
-                } catch (const std::exception& e) {
-                    out << "접수 실패: " << e.what() << "\n";
+                } else {
+                    out << "주문 접수를 취소했습니다.\n";
                 }
+            } catch (const std::exception& e) {
+                out << "접수 실패: " << e.what() << "\n";
             }
-        } else if (choice == "2") {
-            for (const auto& order : appContext_.orderBook().list()) {
-                if (order.status() == OrderStatus::Reserved) {
-                    out << order.id() << " | " << order.sampleId() << " | " << order.customerName() << " | "
-                        << order.quantity() << "\n";
-                }
+        } else {
+            out << "알 수 없는 선택입니다.\n";
+        }
+    }
+}
+
+void ConsoleUI::handleApprovalMenu(std::istream& in, std::ostream& out) {
+    while (true) {
+        out << "-- 주문 승인/거절 --\n";
+        for (const auto& order : appContext_.orderBook().list()) {
+            if (order.status() == OrderStatus::Reserved) {
+                out << order.id() << " | " << order.sampleId() << " | " << order.customerName() << " | "
+                    << order.quantity() << "\n";
             }
-            out << "승인할 주문 ID (건너뛰려면 빈 줄): ";
+        }
+        out << "1. 승인\n";
+        out << "2. 거절\n";
+        out << "0. 뒤로 가기\n> ";
+
+        std::string choice;
+        if (!std::getline(in, choice) || choice == "0") {
+            return;
+        }
+
+        if (choice == "1") {
+            out << "승인할 주문 ID: ";
             std::string orderId;
             std::getline(in, orderId);
-            if (!orderId.empty()) {
-                try {
+
+            try {
+                ApprovalPreview preview = appContext_.orderBook().previewApproval(orderId);
+
+                if (preview.sufficient) {
+                    out << "현재 재고: " << preview.currentStock << " | 주문 수량: " << preview.orderQuantity
+                        << " -> 재고가 충분하여 즉시 출고 대기 상태로 전환됩니다.\n";
+                } else {
+                    out << "현재 재고: " << preview.currentStock << " | 주문 수량: " << preview.orderQuantity
+                        << " | 부족분: " << preview.shortage << " | 실제 생산량(수율 반영): "
+                        << preview.productionQuantity << " -> 부족분 " << preview.shortage << "개를 채우기 위해 "
+                        << preview.productionQuantity << "개를 생산합니다.\n";
+                }
+
+                out << "승인하시겠습니까? (Y/N): ";
+                std::string confirm;
+                std::getline(in, confirm);
+
+                if (confirm == "Y" || confirm == "y") {
                     appContext_.orderBook().approve(orderId);
                     out << "승인 처리되었습니다.\n";
-                } catch (const std::exception& e) {
-                    out << "승인 실패: " << e.what() << "\n";
+                } else {
+                    out << "승인을 취소했습니다.\n";
                 }
+            } catch (const std::exception& e) {
+                out << "승인 실패: " << e.what() << "\n";
             }
-        } else if (choice == "3") {
-            std::string orderId;
+        } else if (choice == "2") {
             out << "거절할 주문 ID: ";
+            std::string orderId;
             std::getline(in, orderId);
             try {
                 appContext_.orderBook().reject(orderId);
@@ -256,10 +299,16 @@ void ConsoleUI::handleMonitoringMenu(std::istream& in, std::ostream& out) {
 void ConsoleUI::handleReleaseMenu(std::istream& in, std::ostream& out) {
     while (true) {
         out << "-- 출고 처리 --\n";
+        bool hasConfirmedOrder = false;
         for (const auto& order : appContext_.orderBook().list()) {
             if (order.status() == OrderStatus::Confirmed) {
                 out << order.id() << " | " << order.sampleId() << " | " << order.customerName() << "\n";
+                hasConfirmedOrder = true;
             }
+        }
+        if (!hasConfirmedOrder) {
+            out << "출고 처리할 수 있는 주문이 없습니다.\n";
+            return;
         }
         out << "출고할 주문 ID (건너뛰려면 0): ";
 

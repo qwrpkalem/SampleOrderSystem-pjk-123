@@ -25,6 +25,7 @@ private:
     void printMainMenu(std::ostream& out);
     void handleSampleMenu(std::istream& in, std::ostream& out);
     void handleOrderMenu(std::istream& in, std::ostream& out);
+    void handleApprovalMenu(std::istream& in, std::ostream& out);
     void handleMonitoringMenu(std::istream& in, std::ostream& out);
     void handleReleaseMenu(std::istream& in, std::ostream& out);
     void handleProductionLineMenu(std::istream& in, std::ostream& out);

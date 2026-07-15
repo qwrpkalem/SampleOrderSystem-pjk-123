@@ -95,7 +95,9 @@ TEST(OrderBookTest, ApproveWithInsufficientStockSetsProducingAndEnqueuesProducti
 
     auto samples = catalog.list();
     ASSERT_EQ(samples.size(), 1u);
-    EXPECT_EQ(samples[0].stock(), 3);
+    // The stock on hand is fully committed to this order at approval time, so it must not
+    // remain available for any other order on the same sample.
+    EXPECT_EQ(samples[0].stock(), 0);
 
     ASSERT_FALSE(productionQueue.empty());
     auto jobs = productionQueue.list();
