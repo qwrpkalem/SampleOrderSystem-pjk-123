@@ -2,8 +2,16 @@
 
 namespace sos {
 
-void ProductionQueue::enqueue(ProductionJob job) {
-    jobs_.push_back(std::move(job));
+ProductionQueue::ProductionQueue(NowProvider nowProvider) : nowProvider_(std::move(nowProvider)) {}
+
+void ProductionQueue::enqueue(std::string orderId, std::string sampleId, int productionQuantity,
+                               double durationMinutes) {
+    auto startTime = jobs_.empty() ? nowProvider_() : jobs_.back().completionTime;
+    auto completionTime =
+        startTime + std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                        std::chrono::duration<double, std::ratio<60>>(durationMinutes));
+
+    jobs_.push_back(ProductionJob{std::move(orderId), std::move(sampleId), productionQuantity, completionTime});
 }
 
 ProductionJob ProductionQueue::dequeue() {
