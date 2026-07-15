@@ -61,4 +61,9 @@ void OrderBook::approve(const std::string& orderId) {
     }
 }
 
+void OrderBook::completeProduction(const std::string& orderId) {
+    auto it = findOrder(orders_, orderId);
+    *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
+}
+
 }  // namespace sos

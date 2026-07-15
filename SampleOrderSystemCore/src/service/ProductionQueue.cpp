@@ -28,4 +28,8 @@ std::vector<ProductionJob> ProductionQueue::list() const {
     return std::vector<ProductionJob>(jobs_.begin(), jobs_.end());
 }
 
+const ProductionJob& ProductionQueue::front() const {
+    return jobs_.front();
+}
+
 }  // namespace sos

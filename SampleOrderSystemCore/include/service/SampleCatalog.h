@@ -14,6 +14,7 @@ public:
     std::vector<Sample> search(const std::string& nameQuery) const;
     bool exists(const std::string& id) const;
     void decreaseStock(const std::string& id, int amount);
+    void increaseStock(const std::string& id, int amount);
 
 private:
     std::vector<Sample> samples_;

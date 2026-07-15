@@ -90,3 +90,18 @@ TEST(OrderBookTest, ApproveWithInsufficientStockSetsProducingAndEnqueuesProducti
     // shortage = 5 - 3 = 2, productionQuantity = ceil(2 / 0.9) = 3
     EXPECT_EQ(jobs[0].productionQuantity, 3);
 }
+
+TEST(OrderBookTest, CompleteProductionTransitionsProducingOrderToConfirmed) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 3));
+    sos::ProductionQueue productionQueue;
+    sos::OrderBook orderBook(catalog, productionQueue);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+    orderBook.approve("O-001");
+
+    orderBook.completeProduction("O-001");
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Confirmed);
+}

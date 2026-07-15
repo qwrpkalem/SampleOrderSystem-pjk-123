@@ -43,3 +43,14 @@ TEST(SampleCatalogTest, DecreaseStockReducesStock) {
     ASSERT_EQ(samples.size(), 1u);
     EXPECT_EQ(samples[0].stock(), 6);
 }
+
+TEST(SampleCatalogTest, IncreaseStockIncreasesStock) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+
+    catalog.increaseStock("S-001", 3);
+
+    auto samples = catalog.list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 13);
+}

@@ -17,6 +17,7 @@ public:
     std::vector<Order> list() const;
     void reject(const std::string& orderId);
     void approve(const std::string& orderId);
+    void completeProduction(const std::string& orderId);
 
 private:
     SampleCatalog& sampleCatalog_;

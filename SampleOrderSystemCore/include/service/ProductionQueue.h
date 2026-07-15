@@ -25,6 +25,7 @@ public:
     ProductionJob dequeue();
     bool empty() const;
     std::vector<ProductionJob> list() const;
+    const ProductionJob& front() const;
 
 private:
     NowProvider nowProvider_;
