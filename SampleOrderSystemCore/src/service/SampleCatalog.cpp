@@ -30,4 +30,12 @@ std::vector<Sample> SampleCatalog::search(const std::string& nameQuery) const {
     return results;
 }
 
+void SampleCatalog::decreaseStock(const std::string& id, int amount) {
+    auto it = std::find_if(samples_.begin(), samples_.end(), [&id](const Sample& sample) { return sample.id() == id; });
+    if (it == samples_.end()) {
+        throw std::invalid_argument("Unknown sample id: " + id);
+    }
+    *it = Sample(it->id(), it->name(), it->averageProductionTime(), it->yield(), it->stock() - amount);
+}
+
 }  // namespace sos

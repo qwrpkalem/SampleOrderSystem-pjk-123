@@ -10,13 +10,15 @@ namespace sos {
 
 class OrderBook {
 public:
-    explicit OrderBook(const SampleCatalog& sampleCatalog);
+    explicit OrderBook(SampleCatalog& sampleCatalog);
 
     Order placeOrder(std::string id, std::string sampleId, std::string customerName, int quantity);
     std::vector<Order> list() const;
+    void reject(const std::string& orderId);
+    void approve(const std::string& orderId);
 
 private:
-    const SampleCatalog& sampleCatalog_;
+    SampleCatalog& sampleCatalog_;
     std::vector<Order> orders_;
 };
 

@@ -1,10 +1,23 @@
 #include "service/OrderBook.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace sos {
 
-OrderBook::OrderBook(const SampleCatalog& sampleCatalog) : sampleCatalog_(sampleCatalog) {}
+namespace {
+
+std::vector<Order>::iterator findOrder(std::vector<Order>& orders, const std::string& orderId) {
+    auto it = std::find_if(orders.begin(), orders.end(), [&orderId](const Order& order) { return order.id() == orderId; });
+    if (it == orders.end()) {
+        throw std::invalid_argument("Unknown order id: " + orderId);
+    }
+    return it;
+}
+
+}  // namespace
+
+OrderBook::OrderBook(SampleCatalog& sampleCatalog) : sampleCatalog_(sampleCatalog) {}
 
 Order OrderBook::placeOrder(std::string id, std::string sampleId, std::string customerName, int quantity) {
     if (!sampleCatalog_.exists(sampleId)) {
@@ -18,6 +31,26 @@ Order OrderBook::placeOrder(std::string id, std::string sampleId, std::string cu
 
 std::vector<Order> OrderBook::list() const {
     return orders_;
+}
+
+void OrderBook::reject(const std::string& orderId) {
+    auto it = findOrder(orders_, orderId);
+    *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Rejected);
+}
+
+void OrderBook::approve(const std::string& orderId) {
+    auto it = findOrder(orders_, orderId);
+
+    auto samples = sampleCatalog_.list();
+    auto sampleIt = std::find_if(samples.begin(), samples.end(),
+                                  [it](const Sample& sample) { return sample.id() == it->sampleId(); });
+
+    if (sampleIt->stock() >= it->quantity()) {
+        sampleCatalog_.decreaseStock(it->sampleId(), it->quantity());
+        *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Confirmed);
+    } else {
+        *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);
+    }
 }
 
 }  // namespace sos

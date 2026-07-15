@@ -32,3 +32,14 @@ TEST(SampleCatalogTest, SearchByNameReturnsPartialMatchesOnly) {
     EXPECT_EQ(results[0].id(), "S-001");
     EXPECT_EQ(results[1].id(), "S-002");
 }
+
+TEST(SampleCatalogTest, DecreaseStockReducesStock) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+
+    catalog.decreaseStock("S-001", 4);
+
+    auto samples = catalog.list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 6);
+}

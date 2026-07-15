@@ -27,3 +27,50 @@ TEST(OrderBookTest, PlaceOrderWithUnknownSampleIdThrows) {
 
     EXPECT_THROW(orderBook.placeOrder("O-001", "UNKNOWN", "Acme Labs", 5), std::invalid_argument);
 }
+
+TEST(OrderBookTest, RejectTransitionsReservedOrderToRejected) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+    sos::OrderBook orderBook(catalog);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+
+    orderBook.reject("O-001");
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Rejected);
+}
+
+TEST(OrderBookTest, ApproveWithSufficientStockConfirmsAndDecreasesStock) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+    sos::OrderBook orderBook(catalog);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+
+    orderBook.approve("O-001");
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Confirmed);
+
+    auto samples = catalog.list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 5);
+}
+
+TEST(OrderBookTest, ApproveWithInsufficientStockSetsProducingAndKeepsStock) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 3));
+    sos::OrderBook orderBook(catalog);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+
+    orderBook.approve("O-001");
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Producing);
+
+    auto samples = catalog.list();
+    ASSERT_EQ(samples.size(), 1u);
+    EXPECT_EQ(samples[0].stock(), 3);
+}
