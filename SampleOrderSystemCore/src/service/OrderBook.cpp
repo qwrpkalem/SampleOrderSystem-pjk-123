@@ -70,4 +70,12 @@ void OrderBook::restoreOrders(std::vector<Order> orders) {
     orders_ = std::move(orders);
 }
 
+void OrderBook::release(const std::string& orderId) {
+    auto it = findOrder(orders_, orderId);
+    if (it->status() != OrderStatus::Confirmed) {
+        throw std::invalid_argument("Order is not in Confirmed status: " + orderId);
+    }
+    *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Release);
+}
+
 }  // namespace sos

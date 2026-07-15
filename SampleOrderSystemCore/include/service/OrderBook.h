@@ -19,6 +19,7 @@ public:
     void approve(const std::string& orderId);
     void completeProduction(const std::string& orderId);
     void restoreOrders(std::vector<Order> orders);
+    void release(const std::string& orderId);
 
 private:
     SampleCatalog& sampleCatalog_;

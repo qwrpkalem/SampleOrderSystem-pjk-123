@@ -122,3 +122,29 @@ TEST(OrderBookTest, RestoreOrdersReplacesListWithGivenOrdersAsIs) {
     EXPECT_EQ(orders[0].id(), "O-001");
     EXPECT_EQ(orders[0].status(), sos::OrderStatus::Producing);
 }
+
+TEST(OrderBookTest, ReleaseTransitionsConfirmedOrderToRelease) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+    sos::ProductionQueue productionQueue;
+    sos::OrderBook orderBook(catalog, productionQueue);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+    orderBook.approve("O-001");
+
+    orderBook.release("O-001");
+
+    auto orders = orderBook.list();
+    ASSERT_EQ(orders.size(), 1u);
+    EXPECT_EQ(orders[0].status(), sos::OrderStatus::Release);
+}
+
+TEST(OrderBookTest, ReleaseNonConfirmedOrderThrows) {
+    sos::SampleCatalog catalog;
+    catalog.registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 10));
+    sos::ProductionQueue productionQueue;
+    sos::OrderBook orderBook(catalog, productionQueue);
+    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 5);
+    // still RESERVED, not CONFIRMED
+
+    EXPECT_THROW(orderBook.release("O-001"), std::invalid_argument);
+}
