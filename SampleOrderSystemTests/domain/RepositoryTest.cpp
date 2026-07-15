@@ -22,6 +22,7 @@ TEST(RepositoryTest, LoadWithoutExistingFileReturnsEmptyState) {
 
     EXPECT_TRUE(state.samples.empty());
     EXPECT_TRUE(state.orders.empty());
+    EXPECT_TRUE(state.productionJobs.empty());
 }
 
 TEST(RepositoryTest, SaveThenLoadRoundTripsSamplesAndOrders) {
@@ -41,4 +42,22 @@ TEST(RepositoryTest, SaveThenLoadRoundTripsSamplesAndOrders) {
     ASSERT_EQ(restored.orders.size(), 1u);
     EXPECT_EQ(restored.orders[0].id(), "O-001");
     EXPECT_EQ(restored.orders[0].status(), sos::OrderStatus::Producing);
+}
+
+TEST(RepositoryTest, SaveThenLoadRoundTripsProductionJobs) {
+    auto path = uniqueTempFilePath("save_then_load_production_jobs");
+    sos::Repository repository(path);
+
+    auto completionTime = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
+    sos::SystemState state;
+    state.productionJobs.push_back(sos::ProductionJob{"O-001", "S-001", 12, completionTime});
+
+    repository.save(state);
+    sos::SystemState restored = repository.load();
+
+    ASSERT_EQ(restored.productionJobs.size(), 1u);
+    EXPECT_EQ(restored.productionJobs[0].orderId, "O-001");
+    EXPECT_EQ(restored.productionJobs[0].sampleId, "S-001");
+    EXPECT_EQ(restored.productionJobs[0].productionQuantity, 12);
+    EXPECT_EQ(restored.productionJobs[0].completionTime, completionTime);
 }

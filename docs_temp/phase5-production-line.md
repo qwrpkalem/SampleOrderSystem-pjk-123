@@ -31,9 +31,10 @@
    - 저장된 생산 완료 예정 시각을 확인해, 프로그램이 꺼져 있던 동안 이미 완료 시각이 지난
      생산 건은 재시작 시점에 재고 Update와 상태 전환을 반영
 5. **생산 현황/대기 목록 표기**: 현재 생산 중인 시료 정보와 대기 큐 목록 출력
-6. **생산 큐 영속성**: Phase 1의 `Repository`(`SystemState`)에 생산 큐 항목(주문 참조, 생산
-   완료 예정 시각 등)을 저장/불러오기 대상으로 추가한다. Phase 1에서는 생산 큐 도메인 타입이
-   아직 없어 이연되었던 부분이다 (참고: `docs_temp/phase1-foundation.md`).
+6. **생산 큐 영속성** (완료). `SystemState`에 `productionJobs` 필드를 추가하고
+   `ProductionJobJson`으로 직렬화(완료 시각은 epoch 초 단위)해 `Repository::save/load`가
+   생산 큐까지 저장/복원하도록 확장했다. Phase 1에서는 생산 큐 도메인 타입이 아직 없어
+   이연되었던 부분이다 (참고: `docs_temp/phase1-foundation.md`).
 
 ## 완료 기준 (체크리스트)
 

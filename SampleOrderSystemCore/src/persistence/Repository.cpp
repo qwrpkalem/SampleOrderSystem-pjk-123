@@ -5,6 +5,7 @@
 
 #include "domain/OrderJson.h"
 #include "domain/SampleJson.h"
+#include "service/ProductionJobJson.h"
 
 namespace sos {
 
@@ -26,6 +27,9 @@ SystemState Repository::load() const {
     for (const auto& orderJson : json.at("orders")) {
         state.orders.push_back(orderFromJson(orderJson));
     }
+    for (const auto& jobJson : json.at("productionJobs")) {
+        state.productionJobs.push_back(productionJobFromJson(jobJson));
+    }
     return state;
 }
 
@@ -38,6 +42,10 @@ void Repository::save(const SystemState& state) const {
     json["orders"] = nlohmann::json::array();
     for (const auto& order : state.orders) {
         json["orders"].push_back(toJson(order));
+    }
+    json["productionJobs"] = nlohmann::json::array();
+    for (const auto& job : state.productionJobs) {
+        json["productionJobs"].push_back(toJson(job));
     }
 
     std::ofstream output(filePath_);
