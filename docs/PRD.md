@@ -72,6 +72,7 @@
 | 모니터링 | [features/monitoring.md](./features/monitoring.md) |
 | 생산 라인 | [features/production-line.md](./features/production-line.md) |
 | 출고 처리 | [features/release.md](./features/release.md) |
+| 데이터 저장/불러오기 (영속성) | [features/persistence.md](./features/persistence.md) |
 
 ## 4. 비즈니스 규칙 요약
 
@@ -81,7 +82,12 @@
 | 실 생산량 | `ceil(부족분 / 수율)` | [production-line.md](./features/production-line.md) |
 | 총 생산 시간 | `평균 생산시간 * 실 생산량` | [production-line.md](./features/production-line.md) |
 | 생산 큐 스케줄링 | FIFO | [production-line.md](./features/production-line.md) |
-| 재고 상태 판정 | 여유 / 부족 / 고갈 (0) | [monitoring.md](./features/monitoring.md) |
+| 재고 상태 판정 | 여유 / 부족 / 고갈 (0), 1개 단위로 판정 | [monitoring.md](./features/monitoring.md) |
+| 재고 판단 시점 | 주문 승인 시점의 재고를 기준으로 충분/부족 판정 | [order-approval.md](./features/order-approval.md) |
+| 재고 Update 시점 | 생산 완료 시점에 한 번에 반영 (진행 중 실시간 반영 아님) | [production-line.md](./features/production-line.md) |
+| 생산 실패 없음 | 수율은 실 생산량 계산에만 사용되며, 생산 시도한 수량은 모두 재고에 포함 | [production-line.md](./features/production-line.md) |
+| 프로그램 재시작 시 생산 완료 처리 | 재시작 시점에 생산 완료 예정 시각이 이미 지났다면 그 시점에 재고 Update 반영 | [production-line.md](./features/production-line.md), [persistence.md](./features/persistence.md) |
+| 데이터 저장 형식 | JSON 파일로 저장하고 시작 시 불러옴 | [persistence.md](./features/persistence.md) |
 
 ## 5. UI 관련 참고 사항
 
@@ -90,10 +96,7 @@
 
 ## 6. 개발 시 고려 필요 항목 (미결 사항)
 
-각 기능 문서의 "미결 사항" 절에도 개별적으로 정리되어 있다.
+각 기능 문서의 "미결 사항"/"결정 사항" 절에도 개별적으로 정리되어 있다.
 
-- 재고 "충분/부족" 판정 기준 (몇 개 이상을 충분으로 볼지 등 구체 수치는 문서에 명시되지 않음 →
-  구현 시 정책 정의 필요)
-- 동시에 여러 생산 라인 운용 여부 (문서상 "하나의 생산 라인은 시료를 하나씩 생산"만 명시, 라인 개수
-  정책은 별도 정의 필요)
-- 시료 등록 시 초기 재고 수량 처리 방식
+- 시료 등록 시 초기 재고 수량 처리 방식 (0으로 시작하는지, 입력 가능한지 등)
+  → 구현 시 정의 필요 (참고: [sample-management.md](./features/sample-management.md))
