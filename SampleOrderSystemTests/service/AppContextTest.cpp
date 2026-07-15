@@ -22,7 +22,7 @@ TEST(AppContextTest, LoadsSamplesOrdersAndProductionJobsFromRepository) {
         state.samples.emplace_back("S-001", "Wafer-A", 12.5, 0.9, 3);
         state.orders.emplace_back("O-001", "S-001", "Acme Labs", 5, sos::OrderStatus::Producing);
         state.productionJobs.push_back(
-            sos::ProductionJob{"O-001", "S-001", 3, std::chrono::system_clock::now() - std::chrono::hours(1)});
+            sos::ProductionJob{"O-001", "S-001", 2, 3, std::chrono::system_clock::now() - std::chrono::hours(1)});
         repository.save(state);
     }
 
@@ -45,7 +45,7 @@ TEST(AppContextTest, CatchesUpOverdueProductionJobsOnLoad) {
         state.samples.emplace_back("S-001", "Wafer-A", 12.5, 0.9, 3);
         state.orders.emplace_back("O-001", "S-001", "Acme Labs", 5, sos::OrderStatus::Producing);
         state.productionJobs.push_back(
-            sos::ProductionJob{"O-001", "S-001", 3, std::chrono::system_clock::now() - std::chrono::hours(1)});
+            sos::ProductionJob{"O-001", "S-001", 2, 3, std::chrono::system_clock::now() - std::chrono::hours(1)});
         repository.save(state);
     }
 
@@ -67,8 +67,8 @@ TEST(AppContextTest, ProcessCompletedProductionJobsAppliesProductionThatFinished
 
     sos::AppContext appContext(path, clock);
     appContext.sampleCatalog().registerSample(sos::Sample("S-001", "Wafer-A", 12.5, 0.9, 3));
-    appContext.orderBook().placeOrder("O-001", "S-001", "Acme Labs", 5);
-    appContext.orderBook().approve("O-001");
+    sos::Order placed = appContext.orderBook().placeOrder("S-001", "Acme Labs", 5);
+    appContext.orderBook().approve(placed.id());
     // shortage = 2, productionQuantity = ceil(2/0.9) = 3, duration = 12.5 * 3 = 37.5 minutes
 
     auto orders = appContext.orderBook().list();

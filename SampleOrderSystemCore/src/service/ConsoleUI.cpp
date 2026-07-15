@@ -1,5 +1,6 @@
 #include "service/ConsoleUI.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -61,7 +62,7 @@ void ConsoleUI::printMainMenu(std::ostream& out) {
         << "  생산라인 대기: " << summary.pendingProductionJobCount << "\n";
     out << "========================================\n";
     out << "1. 시료 관리\n";
-    out << "2. 주문\n";
+    out << "2. 시료 주문\n";
     out << "3. 모니터링\n";
     out << "4. 출고 처리\n";
     out << "5. 생산 라인\n";
@@ -153,10 +154,10 @@ void ConsoleUI::handleSampleMenu(std::istream& in, std::ostream& out) {
 
 void ConsoleUI::handleOrderMenu(std::istream& in, std::ostream& out) {
     while (true) {
-        out << "-- 주문 --\n";
+        out << "-- 시료 주문 --\n";
         out << "1. 시료 주문 접수\n";
-        out << "2. 접수된 주문 목록 / 승인\n";
-        out << "3. 주문 거절\n";
+        out << "2. 접수된 시료 주문 목록 / 승인\n";
+        out << "3. 시료 주문 거절\n";
         out << "0. 뒤로 가기\n> ";
 
         std::string choice;
@@ -165,21 +166,36 @@ void ConsoleUI::handleOrderMenu(std::istream& in, std::ostream& out) {
         }
 
         if (choice == "1") {
-            std::string id, sampleId, customerName, quantityStr;
-            out << "주문 ID: ";
-            std::getline(in, id);
-            out << "시료 ID: ";
-            std::getline(in, sampleId);
-            out << "고객명: ";
-            std::getline(in, customerName);
-            out << "주문 수량: ";
-            std::getline(in, quantityStr);
+            auto samples = appContext_.sampleCatalog().list();
+            if (samples.empty()) {
+                out << "등록된 시료가 없습니다. 시료를 먼저 등록하세요.\n";
+            } else {
+                for (std::size_t i = 0; i < samples.size(); ++i) {
+                    out << (i + 1) << ". " << samples[i].id() << " | " << samples[i].name() << " | 재고 "
+                        << samples[i].stock() << "\n";
+                }
+                out << "시료 선택 번호: ";
+                std::string selectionStr;
+                std::getline(in, selectionStr);
 
-            try {
-                appContext_.orderBook().placeOrder(id, sampleId, customerName, std::stoi(quantityStr));
-                out << "주문이 접수되었습니다.\n";
-            } catch (const std::exception& e) {
-                out << "접수 실패: " << e.what() << "\n";
+                try {
+                    int selection = std::stoi(selectionStr);
+                    if (selection < 1 || static_cast<std::size_t>(selection) > samples.size()) {
+                        throw std::invalid_argument("범위를 벗어난 번호입니다: " + selectionStr);
+                    }
+                    const std::string& sampleId = samples[selection - 1].id();
+
+                    std::string customerName, quantityStr;
+                    out << "고객명: ";
+                    std::getline(in, customerName);
+                    out << "주문 수량: ";
+                    std::getline(in, quantityStr);
+
+                    Order placed = appContext_.orderBook().placeOrder(sampleId, customerName, std::stoi(quantityStr));
+                    out << "시료 주문이 접수되었습니다. (주문번호: " << placed.id() << ")\n";
+                } catch (const std::exception& e) {
+                    out << "접수 실패: " << e.what() << "\n";
+                }
             }
         } else if (choice == "2") {
             for (const auto& order : appContext_.orderBook().list()) {
@@ -264,9 +280,28 @@ void ConsoleUI::handleReleaseMenu(std::istream& in, std::ostream& out) {
 void ConsoleUI::handleProductionLineMenu(std::istream& in, std::ostream& out) {
     while (true) {
         out << "-- 생산 라인 --\n";
-        for (const auto& job : appContext_.productionQueue().list()) {
-            out << job.orderId << " | " << job.sampleId << " | 생산량 " << job.productionQuantity << "\n";
+
+        auto orders = appContext_.orderBook().list();
+        auto jobs = appContext_.productionQueue().list();
+        if (!jobs.empty()) {
+            out << "순서 | 주문번호 | 시료 | 주문량 | 부족분 | 실생산량 | 남은시간\n";
+            for (std::size_t i = 0; i < jobs.size(); ++i) {
+                const auto& job = jobs[i];
+                auto orderIt = std::find_if(orders.begin(), orders.end(),
+                                             [&job](const Order& order) { return order.id() == job.orderId; });
+                int orderQuantity = orderIt != orders.end() ? orderIt->quantity() : 0;
+
+                auto remaining = job.completionTime - nowProvider_();
+                auto remainingMinutes = std::chrono::duration_cast<std::chrono::minutes>(remaining).count();
+                if (remainingMinutes < 0) {
+                    remainingMinutes = 0;
+                }
+
+                out << (i + 1) << " | " << job.orderId << " | " << job.sampleId << " | " << orderQuantity << " | "
+                    << job.shortage << " | " << job.productionQuantity << " | " << remainingMinutes << "분\n";
+            }
         }
+
         out << "0. 뒤로 가기\n> ";
         std::string choice;
         if (!std::getline(in, choice) || choice == "0") {

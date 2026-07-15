@@ -9,8 +9,8 @@ TEST(SummaryTest, BuildSummaryReportsSampleCountTotalStockAndOrderCount) {
 
     sos::ProductionQueue productionQueue;
     sos::OrderBook orderBook(catalog, productionQueue);
-    orderBook.placeOrder("O-001", "S-001", "Acme Labs", 3);
-    orderBook.placeOrder("O-002", "S-002", "Acme Labs", 2);
+    orderBook.placeOrder("S-001", "Acme Labs", 3);
+    orderBook.placeOrder("S-002", "Acme Labs", 2);
 
     sos::Summary summary = sos::buildSummary(catalog, orderBook, productionQueue);
 

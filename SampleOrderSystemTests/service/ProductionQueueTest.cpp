@@ -13,8 +13,8 @@ std::chrono::system_clock::time_point fixedNow() {
 
 TEST(ProductionQueueTest, ListReturnsPendingJobsWithoutRemovingThem) {
     sos::ProductionQueue queue(fixedNow);
-    queue.enqueue("O-001", "S-001", 12, 10.0);
-    queue.enqueue("O-002", "S-002", 5, 10.0);
+    queue.enqueue("O-001", "S-001", 2, 12, 10.0);
+    queue.enqueue("O-002", "S-002", 1, 5, 10.0);
 
     auto jobs = queue.list();
 
@@ -26,8 +26,8 @@ TEST(ProductionQueueTest, ListReturnsPendingJobsWithoutRemovingThem) {
 
 TEST(ProductionQueueTest, DequeueReturnsJobsInFifoOrder) {
     sos::ProductionQueue queue(fixedNow);
-    queue.enqueue("O-001", "S-001", 12, 10.0);
-    queue.enqueue("O-002", "S-002", 5, 10.0);
+    queue.enqueue("O-001", "S-001", 2, 12, 10.0);
+    queue.enqueue("O-002", "S-002", 1, 5, 10.0);
 
     sos::ProductionJob first = queue.dequeue();
     sos::ProductionJob second = queue.dequeue();
@@ -39,8 +39,8 @@ TEST(ProductionQueueTest, DequeueReturnsJobsInFifoOrder) {
 
 TEST(ProductionQueueTest, SecondJobStartsOnlyAfterFirstJobCompletes) {
     sos::ProductionQueue queue(fixedNow);
-    queue.enqueue("O-001", "S-001", 12, 10.0);
-    queue.enqueue("O-002", "S-002", 5, 20.0);
+    queue.enqueue("O-001", "S-001", 2, 12, 10.0);
+    queue.enqueue("O-002", "S-002", 1, 5, 20.0);
 
     auto jobs = queue.list();
 
@@ -51,12 +51,23 @@ TEST(ProductionQueueTest, SecondJobStartsOnlyAfterFirstJobCompletes) {
     EXPECT_EQ(jobs[1].completionTime, expectedSecondCompletion);
 }
 
+TEST(ProductionQueueTest, EnqueueStoresShortageAlongsideProductionQuantity) {
+    sos::ProductionQueue queue(fixedNow);
+    queue.enqueue("O-001", "S-001", 2, 12, 10.0);
+
+    auto jobs = queue.list();
+
+    ASSERT_EQ(jobs.size(), 1u);
+    EXPECT_EQ(jobs[0].shortage, 2);
+    EXPECT_EQ(jobs[0].productionQuantity, 12);
+}
+
 TEST(ProductionQueueTest, RestoreReplacesQueueWithGivenJobsAsIsWithoutRecomputingTime) {
     sos::ProductionQueue queue(fixedNow);
     auto savedCompletionTime = fixedNow() - std::chrono::hours(1);  // in the past, e.g. persisted before restart
 
     std::vector<sos::ProductionJob> savedJobs;
-    savedJobs.push_back(sos::ProductionJob{"O-001", "S-001", 12, savedCompletionTime});
+    savedJobs.push_back(sos::ProductionJob{"O-001", "S-001", 2, 12, savedCompletionTime});
 
     queue.restore(savedJobs);
 

@@ -50,7 +50,7 @@ TEST(RepositoryTest, SaveThenLoadRoundTripsProductionJobs) {
 
     auto completionTime = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
     sos::SystemState state;
-    state.productionJobs.push_back(sos::ProductionJob{"O-001", "S-001", 12, completionTime});
+    state.productionJobs.push_back(sos::ProductionJob{"O-001", "S-001", 2, 12, completionTime});
 
     repository.save(state);
     sos::SystemState restored = repository.load();

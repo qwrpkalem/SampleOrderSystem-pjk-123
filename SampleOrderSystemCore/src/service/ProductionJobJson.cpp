@@ -7,6 +7,7 @@ nlohmann::json toJson(const ProductionJob& job) {
     return nlohmann::json{
         {"orderId", job.orderId},
         {"sampleId", job.sampleId},
+        {"shortage", job.shortage},
         {"productionQuantity", job.productionQuantity},
         {"completionTimeEpochSeconds", epochSeconds},
     };
@@ -17,7 +18,7 @@ ProductionJob productionJobFromJson(const nlohmann::json& json) {
     auto completionTime = std::chrono::system_clock::time_point(std::chrono::seconds(epochSeconds));
 
     return ProductionJob{json.at("orderId").get<std::string>(), json.at("sampleId").get<std::string>(),
-                          json.at("productionQuantity").get<int>(), completionTime};
+                          json.at("shortage").get<int>(), json.at("productionQuantity").get<int>(), completionTime};
 }
 
 }  // namespace sos

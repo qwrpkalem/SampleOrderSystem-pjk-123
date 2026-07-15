@@ -1,6 +1,8 @@
 #include "service/OrderBook.h"
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 #include "service/ProductionCalculator.h"
@@ -17,17 +19,26 @@ std::vector<Order>::iterator findOrder(std::vector<Order>& orders, const std::st
     return it;
 }
 
+const std::string kOrderIdPrefix = "O-";
+
 }  // namespace
 
 OrderBook::OrderBook(SampleCatalog& sampleCatalog, ProductionQueue& productionQueue)
     : sampleCatalog_(sampleCatalog), productionQueue_(productionQueue) {}
 
-Order OrderBook::placeOrder(std::string id, std::string sampleId, std::string customerName, int quantity) {
+std::string OrderBook::generateOrderId() {
+    std::ostringstream oss;
+    oss << kOrderIdPrefix << std::setw(4) << std::setfill('0') << nextOrderNumber_;
+    ++nextOrderNumber_;
+    return oss.str();
+}
+
+Order OrderBook::placeOrder(std::string sampleId, std::string customerName, int quantity) {
     if (!sampleCatalog_.exists(sampleId)) {
         throw std::invalid_argument("Unknown sample id: " + sampleId);
     }
 
-    Order order(std::move(id), std::move(sampleId), std::move(customerName), quantity, OrderStatus::Reserved);
+    Order order(generateOrderId(), std::move(sampleId), std::move(customerName), quantity, OrderStatus::Reserved);
     orders_.push_back(order);
     return order;
 }
@@ -56,7 +67,7 @@ void OrderBook::approve(const std::string& orderId) {
         int productionQuantity = calculateProductionQuantity(shortage, sampleIt->yield());
         double durationMinutes = calculateProductionDuration(sampleIt->averageProductionTime(), productionQuantity);
 
-        productionQueue_.enqueue(it->id(), it->sampleId(), productionQuantity, durationMinutes);
+        productionQueue_.enqueue(it->id(), it->sampleId(), shortage, productionQuantity, durationMinutes);
         *it = Order(it->id(), it->sampleId(), it->customerName(), it->quantity(), OrderStatus::Producing);
     }
 }
@@ -67,6 +78,17 @@ void OrderBook::completeProduction(const std::string& orderId) {
 }
 
 void OrderBook::restoreOrders(std::vector<Order> orders) {
+    for (const auto& order : orders) {
+        const std::string& id = order.id();
+        if (id.size() > kOrderIdPrefix.size() && id.compare(0, kOrderIdPrefix.size(), kOrderIdPrefix) == 0) {
+            std::string numberPart = id.substr(kOrderIdPrefix.size());
+            bool isNumeric = std::all_of(numberPart.begin(), numberPart.end(), ::isdigit);
+            if (isNumeric && !numberPart.empty()) {
+                int number = std::stoi(numberPart);
+                nextOrderNumber_ = std::max(nextOrderNumber_, number + 1);
+            }
+        }
+    }
     orders_ = std::move(orders);
 }
 

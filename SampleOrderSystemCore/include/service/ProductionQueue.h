@@ -11,6 +11,7 @@ namespace sos {
 struct ProductionJob {
     std::string orderId;
     std::string sampleId;
+    int shortage;
     int productionQuantity;
     std::chrono::system_clock::time_point completionTime;
 };
@@ -21,7 +22,8 @@ public:
 
     explicit ProductionQueue(NowProvider nowProvider = &std::chrono::system_clock::now);
 
-    void enqueue(std::string orderId, std::string sampleId, int productionQuantity, double durationMinutes);
+    void enqueue(std::string orderId, std::string sampleId, int shortage, int productionQuantity,
+                 double durationMinutes);
     ProductionJob dequeue();
     bool empty() const;
     std::vector<ProductionJob> list() const;
