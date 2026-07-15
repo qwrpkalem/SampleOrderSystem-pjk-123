@@ -83,8 +83,9 @@
 | 총 생산 시간 | `평균 생산시간 * 실 생산량` | [production-line.md](./features/production-line.md) |
 | 생산 큐 스케줄링 | FIFO | [production-line.md](./features/production-line.md) |
 | 재고 상태 판정 | 여유 / 부족 / 고갈 (0), 1개 단위로 판정 | [monitoring.md](./features/monitoring.md) |
-| 재고 판단 시점 | 주문 승인 시점의 재고를 기준으로 충분/부족 판정 | [order-approval.md](./features/order-approval.md) |
-| 재고 Update 시점 | 생산 완료 시점에 한 번에 반영 (진행 중 실시간 반영 아님) | [production-line.md](./features/production-line.md) |
+| 재고 차감 시점 | **출고(RELEASE) 시점에만** 재고를 차감. 승인/생산 완료 시점에는 재고를 변경하지 않음 | [order-approval.md](./features/order-approval.md), [production-line.md](./features/production-line.md), [release.md](./features/release.md) |
+| 재고 판단(충분/부족) 시점 | 주문 승인 시점에, 같은 시료의 선점 수량(다른 Producing/Confirmed 주문)을 제외한 가용 재고(`max(0, 재고-선점수량)`) 기준으로 판정 | [order-approval.md](./features/order-approval.md) |
+| 재고 Update(생산 완료) 시점 | 생산 완료 시점에 실 생산량 전체를 재고에 한 번에 반영 (진행 중 실시간 반영 아님) | [production-line.md](./features/production-line.md) |
 | 생산 실패 없음 | 수율은 실 생산량 계산에만 사용되며, 생산 시도한 수량은 모두 재고에 포함 | [production-line.md](./features/production-line.md) |
 | 프로그램 재시작 시 생산 완료 처리 | 재시작 시점에 생산 완료 예정 시각이 이미 지났다면 그 시점에 재고 Update 반영 | [production-line.md](./features/production-line.md), [persistence.md](./features/persistence.md) |
 | 데이터 저장 형식 | JSON 파일로 저장하고 시작 시 불러옴 | [persistence.md](./features/persistence.md) |

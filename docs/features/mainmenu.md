@@ -15,7 +15,8 @@
 | 하위 메뉴 | 상세 문서 |
 | --- | --- |
 | 시료 관리 | [sample-management.md](./sample-management.md) |
-| 주문 (접수 / 승인 / 거절) | [order.md](./order.md), [order-approval.md](./order-approval.md) |
+| 시료 주문 (접수) | [order.md](./order.md) |
+| 주문 승인/거절 | [order-approval.md](./order-approval.md) |
 | 모니터링 | [monitoring.md](./monitoring.md) |
 | 출고 처리 | [release.md](./release.md) |
 | 생산 라인 | [production-line.md](./production-line.md) |
@@ -28,3 +29,6 @@
   표시한다 (메인 메뉴 루프 중에는 반복 표시하지 않음).
 - 메인 메뉴 상단에 "시스템 현황" 영역을 두어 **현재 날짜/시간**과 요약 정보 4개 항목(총 등록
   시료, 총 재고, 전체 주문 건수, 생산라인 대기)을 함께 표시한다.
+- "주문 승인/거절"은 "시료 주문(접수)"의 하위 메뉴가 아니라, "시료 관리"와 **동일한 레벨의
+  최상단 메뉴 항목**으로 둔다. 승인/거절은 접수와는 별개로 자주 오가는 작업이라 접수 메뉴 안에
+  중첩되어 있으면 접근성이 떨어진다는 피드백을 반영해 구현 중 결정했다.
