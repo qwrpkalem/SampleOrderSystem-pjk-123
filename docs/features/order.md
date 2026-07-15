@@ -28,6 +28,11 @@
 - 고객명
 - 주문 수량
 
+## 결정 사항
+
+- 등록되지 않은 시료 ID로 주문을 시도하면 거부한다 (`std::invalid_argument`).
+  `sample-management.md`의 "시스템에 등록된 시료만 주문 가능" 요구사항을 그대로 강제한다.
+
 ## 관련 문서
 
 - 승인/거절 처리: [order-approval.md](./order-approval.md)

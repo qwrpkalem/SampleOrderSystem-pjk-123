@@ -12,6 +12,7 @@ public:
     void registerSample(Sample sample);
     std::vector<Sample> list() const;
     std::vector<Sample> search(const std::string& nameQuery) const;
+    bool exists(const std::string& id) const;
 
 private:
     std::vector<Sample> samples_;

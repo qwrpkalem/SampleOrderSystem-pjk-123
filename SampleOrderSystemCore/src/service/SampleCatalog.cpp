@@ -19,6 +19,10 @@ std::vector<Sample> SampleCatalog::list() const {
     return samples_;
 }
 
+bool SampleCatalog::exists(const std::string& id) const {
+    return std::any_of(samples_.begin(), samples_.end(), [&id](const Sample& sample) { return sample.id() == id; });
+}
+
 std::vector<Sample> SampleCatalog::search(const std::string& nameQuery) const {
     std::vector<Sample> results;
     std::copy_if(samples_.begin(), samples_.end(), std::back_inserter(results),

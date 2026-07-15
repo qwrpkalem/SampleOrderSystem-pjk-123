@@ -122,6 +122,7 @@
     <ClInclude Include="include\domain\OrderJson.h" />
     <ClInclude Include="include\persistence\Repository.h" />
     <ClInclude Include="include\service\SampleCatalog.h" />
+    <ClInclude Include="include\service\OrderBook.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\domain\Sample.cpp" />
@@ -130,6 +131,7 @@
     <ClCompile Include="src\domain\OrderJson.cpp" />
     <ClCompile Include="src\persistence\Repository.cpp" />
     <ClCompile Include="src\service\SampleCatalog.cpp" />
+    <ClCompile Include="src\service\OrderBook.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
