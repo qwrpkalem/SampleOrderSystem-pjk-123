@@ -78,6 +78,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\SampleOrderSystemCore\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -95,6 +96,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\SampleOrderSystemCore\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -110,6 +112,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\SampleOrderSystemCore\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -127,6 +130,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)..\SampleOrderSystemCore\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GTEST_LINKED_AS_SHARED_LIBRARY=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -151,6 +155,7 @@
     <ClCompile Include="service\MonitoringTest.cpp" />
     <ClCompile Include="service\AppContextTest.cpp" />
     <ClCompile Include="service\SummaryTest.cpp" />
+    <ClCompile Include="service\ConsoleUITest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SampleOrderSystemCore\SampleOrderSystemCore.vcxproj">
